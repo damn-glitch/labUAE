@@ -1,2 +1,5 @@
 pandas
 Pillow
+plotly
+requests
+streamlit-lottie
