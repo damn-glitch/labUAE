@@ -1,1445 +1,2109 @@
 import streamlit as st
 import pandas as pd
-import datetime
-import json
-import os
-import random
 from PIL import Image
-import io
-import base64
+import sqlite3
+from datetime import datetime, timedelta
+import hashlib
+import json
+from dataclasses import dataclass
+from typing import List, Optional, Dict
+import plotly.express as px
+import plotly.graph_objects as go
+from streamlit_lottie import st_lottie
+import requests
 
-# Set page configuration
+# ==================== CONFIG ====================
 st.set_page_config(
-    page_title="LabConnect",
-    page_icon="🧪",
+    page_title="UAE Innovate Hub",
+    page_icon="🔬",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# Initialize session state variables if they don't exist
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'username' not in st.session_state:
-    st.session_state.username = ""
-if 'user_type' not in st.session_state:
-    st.session_state.user_type = ""
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = "Home"
 
+# ==================== БАЗА ДАННЫХ ====================
+class Database:
+    def __init__(self, db_path="innovate_hub.db"):
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.conn.row_factory = sqlite3.Row
+        self.create_tables()
 
-# Mock data functions (these would connect to a database in a real application)
-def load_labs_data():
-    return pd.DataFrame({
-        'lab_id': range(1, 11),
-        'name': [
-            'BioGenetics Lab', 'Chemical Analysis Center', 'Molecular Research Hub',
-            'Advanced Materials Testing', 'Medical Diagnostics Lab', 'Environmental Sciences Lab',
-            'Pharmaceutical Testing Lab', 'Food Safety Research Center', 'Nanotechnology Lab',
-            'Quantum Physics Research Center'
-        ],
-        'location': [
-            'New York, NY', 'Boston, MA', 'San Francisco, CA', 'Chicago, IL', 'Houston, TX',
-            'Seattle, WA', 'Austin, TX', 'Denver, CO', 'Atlanta, GA', 'Miami, FL'
-        ],
-        'specialization': [
-            'Genetic Research', 'Chemical Analysis', 'Molecular Biology',
-            'Materials Science', 'Medical Testing', 'Environmental Testing',
-            'Pharmaceutical Research', 'Food Safety Testing', 'Nanotechnology',
-            'Quantum Physics'
-        ],
-        'price_per_hour': [
-            150, 120, 180, 200, 130,
-            110, 160, 140, 220, 250
-        ],
-        'rating': [
-            4.8, 4.5, 4.9, 4.7, 4.6,
-            4.3, 4.7, 4.5, 4.8, 4.9
-        ],
-        'available': [
-            True, True, True, False, True,
-            True, False, True, True, True
-        ],
-        'image': [
-            'lab1.jpg', 'lab2.jpg', 'lab3.jpg', 'lab4.jpg', 'lab5.jpg',
-            'lab6.jpg', 'lab7.jpg', 'lab8.jpg', 'lab9.jpg', 'lab10.jpg'
-        ],
-        'description': [
-            'State-of-the-art genetics research laboratory with advanced DNA sequencing capabilities.',
-            'Full-service chemical analysis lab specializing in organic and inorganic compounds testing.',
-            'Leading molecular biology research center with PCR, Western blot, and ELISA capabilities.',
-            'Materials testing facility with SEM, TEM, and XRD equipment for detailed analysis.',
-            'CLIA-certified medical diagnostics lab offering a wide range of clinical tests.',
-            'Environmental testing lab specializing in water, soil, and air quality analysis.',
-            'GMP-compliant pharmaceutical testing lab with dissolution and stability testing services.',
-            'ISO-certified food safety testing lab with microbiological and chemical testing capabilities.',
-            'Advanced nanotechnology research facility with clean room and atomic manipulation tools.',
-            'Quantum physics research center with superconducting quantum computers and cryogenics.'
-        ],
-        'services': [
-            ['DNA Sequencing', 'PCR Analysis', 'Genetic Mapping'],
-            ['Elemental Analysis', 'Chromatography', 'Spectroscopy'],
-            ['ELISA', 'Protein Purification', 'Cell Culture'],
-            ['Mechanical Testing', 'Thermal Analysis', 'Microscopy'],
-            ['Blood Tests', 'Urinalysis', 'Microbiology'],
-            ['Water Quality Testing', 'Soil Analysis', 'Air Quality Testing'],
-            ['Dissolution Testing', 'Stability Studies', 'Method Development'],
-            ['Microbiological Testing', 'Allergen Testing', 'Nutritional Analysis'],
-            ['SEM Imaging', 'Nanofabrication', 'Particle Size Analysis'],
-            ['Quantum Computing', 'Low Temperature Physics', 'Quantum Entanglement Studies']
-        ],
-        'equipment': [
-            ['Illumina NextSeq', 'Thermal Cyclers', 'DNA Extractors'],
-            ['HPLC', 'GC-MS', 'ICP-MS'],
-            ['Flow Cytometer', 'Confocal Microscope', 'Real-time PCR'],
-            ['Tensile Tester', 'SEM', 'DSC'],
-            ['Blood Analyzers', 'Microbiology Incubators', 'Centrifuges'],
-            ['ICP-OES', 'Gas Analyzers', 'Particle Counters'],
-            ['Dissolution Testers', 'HPLC Systems', 'Stability Chambers'],
-            ['PCR Systems', 'ELISA Readers', 'Microbiological Analyzers'],
-            ['AFM', 'SEM', 'TEM'],
-            ['Quantum Computers', 'Cryostats', 'Particle Detectors']
+    def create_tables(self):
+        """Создание таблиц в БД"""
+        cursor = self.conn.cursor()
+
+        # Таблица пользователей
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS users
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY
+                           AUTOINCREMENT,
+                           email
+                           TEXT
+                           UNIQUE
+                           NOT
+                           NULL,
+                           password_hash
+                           TEXT
+                           NOT
+                           NULL,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           user_type
+                           TEXT
+                           NOT
+                           NULL,
+                           organization
+                           TEXT,
+                           created_at
+                           TIMESTAMP
+                           DEFAULT
+                           CURRENT_TIMESTAMP
+                       )''')
+
+        # Таблица лабораторий
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS labs
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY
+                           AUTOINCREMENT,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           university
+                           TEXT
+                           NOT
+                           NULL,
+                           location
+                           TEXT
+                           NOT
+                           NULL,
+                           specialty
+                           TEXT
+                           NOT
+                           NULL,
+                           available_from
+                           DATE,
+                           equipment
+                           TEXT,
+                           description
+                           TEXT,
+                           contact
+                           TEXT,
+                           price_per_day
+                           INTEGER,
+                           rating
+                           REAL
+                           DEFAULT
+                           0,
+                           image_url
+                           TEXT,
+                           capacity
+                           INTEGER,
+                           amenities
+                           TEXT
+                       )''')
+
+        # Таблица талантов
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS talents
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY
+                           AUTOINCREMENT,
+                           user_id
+                           INTEGER,
+                           title
+                           TEXT
+                           NOT
+                           NULL,
+                           location
+                           TEXT
+                           NOT
+                           NULL,
+                           experience
+                           TEXT,
+                           education
+                           TEXT,
+                           skills
+                           TEXT,
+                           availability
+                           TEXT,
+                           bio
+                           TEXT,
+                           hourly_rate
+                           INTEGER,
+                           portfolio_url
+                           TEXT,
+                           linkedin_url
+                           TEXT,
+                           rating
+                           REAL
+                           DEFAULT
+                           0,
+                           FOREIGN
+                           KEY
+                       (
+                           user_id
+                       ) REFERENCES users
+                       (
+                           id
+                       )
+                           )''')
+
+        # Таблица проектов
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS projects
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY
+                           AUTOINCREMENT,
+                           title
+                           TEXT
+                           NOT
+                           NULL,
+                           organization
+                           TEXT
+                           NOT
+                           NULL,
+                           location
+                           TEXT
+                           NOT
+                           NULL,
+                           deadline
+                           DATE,
+                           posted
+                           DATE
+                           DEFAULT
+                           CURRENT_DATE,
+                           description
+                           TEXT,
+                           requirements
+                           TEXT,
+                           tags
+                           TEXT,
+                           budget_min
+                           INTEGER,
+                           budget_max
+                           INTEGER,
+                           status
+                           TEXT
+                           DEFAULT
+                           'Active',
+                           contact
+                           TEXT,
+                           views
+                           INTEGER
+                           DEFAULT
+                           0,
+                           applications
+                           INTEGER
+                           DEFAULT
+                           0
+                       )''')
+
+        # Таблица бронирований
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS bookings
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY
+                           AUTOINCREMENT,
+                           user_id
+                           INTEGER,
+                           lab_id
+                           INTEGER,
+                           start_date
+                           DATE,
+                           end_date
+                           DATE,
+                           purpose
+                           TEXT,
+                           status
+                           TEXT
+                           DEFAULT
+                           'Pending',
+                           total_cost
+                           INTEGER,
+                           created_at
+                           TIMESTAMP
+                           DEFAULT
+                           CURRENT_TIMESTAMP,
+                           FOREIGN
+                           KEY
+                       (
+                           user_id
+                       ) REFERENCES users
+                       (
+                           id
+                       ),
+                           FOREIGN KEY
+                       (
+                           lab_id
+                       ) REFERENCES labs
+                       (
+                           id
+                       )
+                           )''')
+
+        # Таблица отзывов
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS reviews
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY
+                           AUTOINCREMENT,
+                           user_id
+                           INTEGER,
+                           item_type
+                           TEXT,
+                           item_id
+                           INTEGER,
+                           rating
+                           INTEGER,
+                           comment
+                           TEXT,
+                           created_at
+                           TIMESTAMP
+                           DEFAULT
+                           CURRENT_TIMESTAMP,
+                           FOREIGN
+                           KEY
+                       (
+                           user_id
+                       ) REFERENCES users
+                       (
+                           id
+                       )
+                           )''')
+
+        # Таблица уведомлений
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS notifications
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY
+                           AUTOINCREMENT,
+                           user_id
+                           INTEGER,
+                           title
+                           TEXT,
+                           message
+                           TEXT,
+                           type
+                           TEXT,
+                           is_read
+                           BOOLEAN
+                           DEFAULT
+                           FALSE,
+                           created_at
+                           TIMESTAMP
+                           DEFAULT
+                           CURRENT_TIMESTAMP,
+                           FOREIGN
+                           KEY
+                       (
+                           user_id
+                       ) REFERENCES users
+                       (
+                           id
+                       )
+                           )''')
+
+        # Добавляем проекты
+        projects_data = [
+            ("Smart City Sensor Network Development", "Dubai Future Foundation", "Dubai",
+             "2024-08-20", "2024-01-15",
+             "Looking for IoT experts to develop and test an urban sensor network for monitoring air quality, traffic, and noise pollution. The project aims to create a scalable infrastructure for UAE smart cities.",
+             "Expertise in IoT sensor networks, data engineering, and embedded systems. Experience with LoRaWAN and edge computing preferred.",
+             "IoT,Data Engineering,Embedded Systems,Smart City", 50000, 80000, "Active", "projects@dubaifuture.gov.ae",
+             145, 12),
+
+            ("Advanced Materials Testing for Construction", "Al Futtaim Construction", "Abu Dhabi",
+             "2024-07-25", "2024-01-18",
+             "Need materials scientists to analyze new sustainable construction materials. Focus on thermal performance, durability, and structural integrity of novel cement composites.",
+             "PhD in Materials Science or equivalent experience. Access to SEM, XRD, and thermal analysis equipment required.",
+             "Materials Science,Construction,Testing,Sustainability", 30000, 45000, "Active", "materials@alfuttaim.ae",
+             89, 5),
+
+            ("Drone Delivery System Testing", "Noon", "Dubai",
+             "2024-09-15", "2024-01-20",
+             "Seeking drone specialists to validate last-mile delivery systems in urban environments. Testing navigation algorithms, payload handling, and collision avoidance.",
+             "Licensed drone pilot with experience in autonomous flight systems. Knowledge of UAE drone regulations essential.",
+             "Drones,UAV,Logistics,Navigation", 60000, 90000, "Active", "innovation@noon.com", 234, 18),
+
+            ("AI-Powered Patient Diagnosis System", "Mubadala Healthcare", "Abu Dhabi",
+             "2024-04-10", "2023-11-05",
+             "Developed AI system for early disease detection using patient data. Successfully improved diagnostic accuracy by 35% for common conditions.",
+             "Machine learning expertise, healthcare domain knowledge, Python proficiency required.",
+             "AI,Healthcare,Machine Learning,Medical", 80000, 120000, "Completed", "ai.health@mubadala.ae", 567, 32),
+
+            ("Blockchain Supply Chain Platform", "DP World", "Dubai",
+             "2024-10-01", "2024-01-25",
+             "Building a blockchain-based supply chain tracking system for port operations. Need blockchain developers and logistics experts.",
+             "Solidity, smart contract development, supply chain knowledge. Experience with Hyperledger preferred.",
+             "Blockchain,Supply Chain,Smart Contracts,Logistics", 70000, 100000, "Active", "blockchain@dpworld.com",
+             156, 9),
+
+            ("Solar Panel Efficiency Optimization", "Masdar", "Abu Dhabi",
+             "2024-06-30", "2024-01-10",
+             "Research project to improve solar panel efficiency in desert conditions. Testing new coating materials and cooling systems.",
+             "PhD in Renewable Energy or Materials Science. Experience with solar PV systems and thermal management.",
+             "Solar Energy,Materials Science,Research,Renewable", 40000, 65000, "Active", "research@masdar.ae", 98, 7),
+
+            ("Autonomous Vehicle Testing Program", "RTA Dubai", "Dubai",
+             "2024-12-01", "2024-02-01",
+             "Large-scale testing of autonomous vehicles in Dubai. Need engineers for sensor calibration, route mapping, and safety validation.",
+             "Experience with SLAM, sensor fusion, and autonomous navigation. ROS expertise required.",
+             "Autonomous Vehicles,Robotics,AI,Transportation", 100000, 150000, "Active", "autonomous@rta.ae", 412, 24),
+
+            ("Biotechnology Lab Equipment Validation", "Khalifa University", "Abu Dhabi",
+             "2024-05-15", "2024-01-28",
+             "Validating new biotechnology lab equipment for research facility. Need biotech experts for protocol development and testing.",
+             "PhD in Biotechnology or related field. Experience with PCR, cell culture, and molecular biology techniques.",
+             "Biotechnology,Research,Lab Equipment,Validation", 35000, 50000, "Active", "biotech@ku.ac.ae", 67, 4),
+
+            ("Quantum Computing Research Initiative", "UAEU", "Al Ain",
+             "2024-11-30", "2024-02-05",
+             "Exploring quantum computing applications for cryptography and optimization. Seeking quantum computing researchers.",
+             "PhD in Physics or Computer Science. Experience with quantum algorithms and Qiskit framework.",
+             "Quantum Computing,Research,Cryptography,Physics", 90000, 130000, "Pending", "quantum@uaeu.ac.ae", 43, 2),
+
+            ("3D Printing Medical Devices", "Cleveland Clinic Abu Dhabi", "Abu Dhabi",
+             "2024-07-01", "2024-01-22",
+             "Developing custom medical implants using 3D printing. Need specialists in biocompatible materials and CAD design.",
+             "Experience with medical-grade 3D printing, CAD software, and biocompatible materials.",
+             "3D Printing,Medical Devices,CAD,Healthcare", 55000, 75000, "Active", "3dmedical@clevelandclinic.ae", 123,
+             8),
+
+            ("Cybersecurity Audit for Banking System", "Emirates NBD", "Dubai",
+             "2024-04-30", "2024-01-30",
+             "Comprehensive security audit of banking infrastructure. Need certified ethical hackers and security analysts.",
+             "CISSP or CEH certification required. Experience with financial systems security.",
+             "Cybersecurity,Banking,Security Audit,Penetration Testing", 65000, 95000, "Active",
+             "security@emiratesnbd.com", 189, 11),
+
+            ("Nanotechnology Water Purification", "DEWA", "Dubai",
+             "2024-08-15", "2024-02-03",
+             "Developing nanomaterial-based water purification systems. Research focus on removing microplastics and heavy metals.",
+             "PhD in Nanotechnology or Chemistry. Experience with water treatment and nanomaterial synthesis.",
+             "Nanotechnology,Water Treatment,Research,Environmental", 50000, 70000, "Active", "nanotech@dewa.gov.ae",
+             76, 5),
+
+            ("Computer Vision for Retail Analytics", "Majid Al Futtaim", "Dubai",
+             "2024-06-15", "2024-01-25",
+             "Implementing computer vision systems for customer behavior analysis and inventory management in retail stores.",
+             "Deep learning expertise, experience with object detection and tracking. Python and TensorFlow required.",
+             "Computer Vision,AI,Retail,Analytics", 45000, 65000, "Active", "tech@majidalfuttaim.com", 201, 15),
+
+            ("IoT Smart Agriculture Platform", "Abu Dhabi Agriculture Authority", "Al Ain",
+             "2024-09-30", "2024-02-07",
+             "Building IoT platform for precision agriculture. Monitoring soil conditions, irrigation, and crop health.",
+             "IoT development experience, knowledge of agriculture technology. LoRaWAN and sensor networks expertise.",
+             "IoT,Agriculture,Sensors,Data Analytics", 40000, 60000, "Pending", "smartfarm@adaa.gov.ae", 54, 3),
+
+            ("Renewable Energy Grid Integration", "TAQA", "Abu Dhabi",
+             "2024-10-15", "2024-02-10",
+             "Studying integration of renewable energy sources into existing power grid. Focus on stability and energy storage.",
+             "Electrical Engineering background, experience with grid systems and energy storage solutions.",
+             "Renewable Energy,Grid Systems,Energy Storage,Electrical Engineering", 60000, 85000, "Active",
+             "renewable@taqa.com", 92, 6),
         ]
-    })
 
+        cursor.executemany('''
+                           INSERT INTO projects (title, organization, location, deadline, posted,
+                                                 description, requirements, tags, budget_min, budget_max,
+                                                 status, contact, views, applications)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                           ''', projects_data)
 
-def load_talents_data():
-    return pd.DataFrame({
-        'talent_id': range(1, 11),
-        'name': [
-            'Dr. Sarah Johnson', 'Dr. Michael Chen', 'Dr. Emily Rodriguez',
-            'Dr. David Kim', 'Dr. Olivia Taylor', 'Dr. James Wilson',
-            'Dr. Sophia Patel', 'Dr. Robert Garcia', 'Dr. Ava Thompson',
-            'Dr. William Brown'
-        ],
-        'specialization': [
-            'Molecular Biology', 'Analytical Chemistry', 'Microbiology',
-            'Materials Science', 'Biochemistry', 'Environmental Science',
-            'Pharmaceutical Sciences', 'Food Science', 'Nanotechnology',
-            'Quantum Physics'
-        ],
-        'experience_years': [
-            12, 8, 15, 10, 7,
-            20, 9, 14, 6, 25
-        ],
-        'education': [
-            'Ph.D. Harvard University', 'Ph.D. MIT', 'Ph.D. Stanford University',
-            'Ph.D. Caltech', 'Ph.D. UC Berkeley', 'Ph.D. Princeton University',
-            'Ph.D. Columbia University', 'Ph.D. University of Chicago', 'Ph.D. Yale University',
-            'Ph.D. Cornell University'
-        ],
-        'rating': [
-            4.9, 4.7, 4.8, 4.6, 4.5,
-            4.9, 4.6, 4.7, 4.5, 4.8
-        ],
-        'hourly_rate': [
-            95, 85, 100, 90, 80,
-            110, 85, 95, 75, 120
-        ],
-        'available': [
-            True, True, False, True, True,
-            False, True, True, True, True
-        ],
-        'image': [
-            'talent1.jpg', 'talent2.jpg', 'talent3.jpg', 'talent4.jpg', 'talent5.jpg',
-            'talent6.jpg', 'talent7.jpg', 'talent8.jpg', 'talent9.jpg', 'talent10.jpg'
-        ],
-        'skills': [
-            ['PCR', 'DNA Sequencing', 'Cell Culture', 'CRISPR'],
-            ['HPLC', 'GC-MS', 'Spectroscopy', 'Method Development'],
-            ['Bacterial Culture', 'Aseptic Technique', 'Antibiotic Resistance Testing', 'PCR'],
-            ['SEM', 'XRD', 'Mechanical Testing', 'Materials Characterization'],
-            ['Protein Purification', 'Enzyme Kinetics', 'Western Blotting', 'ELISA'],
-            ['Environmental Sampling', 'Water Analysis', 'Soil Testing', 'GIS'],
-            ['Drug Formulation', 'Stability Testing', 'Dissolution Studies', 'HPLC'],
-            ['Food Analysis', 'Sensory Evaluation', 'Microbial Testing', 'Nutritional Analysis'],
-            ['AFM', 'SEM', 'Nanofabrication', 'Particle Size Analysis'],
-            ['Quantum Computing', 'Cryogenics', 'Laser Spectroscopy', 'Mathematical Modeling']
-        ],
-        'publications': [
-            8, 5, 12, 7, 4,
-            15, 6, 10, 3, 20
-        ],
-        'bio': [
-            'Experienced molecular biologist specializing in genetic engineering and CRISPR technology.',
-            'Analytical chemist with expertise in developing novel methods for complex sample analysis.',
-            'Microbiologist focusing on antibiotic resistance mechanisms in pathogenic bacteria.',
-            'Materials scientist specializing in the development and characterization of advanced composites.',
-            'Biochemist with expertise in protein structure-function relationships and drug discovery.',
-            'Environmental scientist specializing in the impact of industrial pollutants on aquatic ecosystems.',
-            'Pharmaceutical scientist with expertise in controlled drug delivery systems.',
-            'Food scientist specializing in food safety, quality control, and product development.',
-            'Nanotechnology specialist focusing on the development of nanomaterials for biomedical applications.',
-            'Quantum physicist with expertise in quantum computing algorithms and applications.'
+        # Добавляем примеры бронирований
+        bookings_data = [
+            (1, 1, "2024-02-15", "2024-02-17", "Testing new robotic arm design", "Confirmed", 4500),
+            (2, 3, "2024-02-20", "2024-02-20", "Drone delivery system testing", "Confirmed", 800),
+            (3, 2, "2024-02-25", "2024-02-28", "Material analysis for aerospace project", "Pending", 3600),
+            (4, 4, "2024-03-01", "2024-03-03", "Biotech equipment training", "Confirmed", 3300),
+            (5, 5, "2024-03-05", "2024-03-06", "Computer vision algorithm testing", "Confirmed", 2800),
         ]
-    })
+
+        cursor.executemany('''
+                           INSERT INTO bookings (user_id, lab_id, start_date, end_date, purpose, status, total_cost)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)
+                           ''', bookings_data)
+
+        # Добавляем примеры отзывов
+        reviews_data = [
+            (1, "lab", 1, 5, "Excellent facilities and very helpful staff. The robotics equipment is top-notch!"),
+            (2, "lab", 3, 5, "Perfect for drone testing. Large open space and great safety measures."),
+            (3, "talent", 1, 5, "Ahmed is incredibly knowledgeable and helped us solve complex robotics challenges."),
+            (4, "talent", 2, 4, "Fatima delivered great insights for our data analysis project."),
+            (5, "lab", 5, 5, "State-of-the-art computer vision lab. GPU clusters performed excellently."),
+            (1, "talent", 5, 5, "Mohammed's AI expertise was invaluable for our project."),
+            (2, "lab", 2, 4, "Good materials testing facility, though booking process could be smoother."),
+            (3, "talent", 3, 5, "Dr. Rashid's materials science knowledge is exceptional. Highly recommended!"),
+        ]
+
+        cursor.executemany('''
+                           INSERT INTO reviews (user_id, item_type, item_id, rating, comment)
+                           VALUES (?, ?, ?, ?, ?)
+                           ''', reviews_data)
+
+        # Добавляем примеры уведомлений
+        notifications_data = [
+            (1, "Booking Confirmed",
+             "Your booking for Khalifa University Robotics Lab has been confirmed for Feb 15-17.", "booking"),
+            (2, "New Project Match", "A new project 'Drone Delivery System Testing' matches your skills.", "project"),
+            (3, "Review Received", "You received a 5-star review for your recent work.", "review"),
+            (4, "Booking Reminder", "Reminder: Your lab booking starts tomorrow at 9:00 AM.", "reminder"),
+            (5, "New Talent Available", "A new Computer Vision Engineer joined the platform.", "talent"),
+        ]
+
+        cursor.executemany('''
+                           INSERT INTO notifications (user_id, title, message, type)
+                           VALUES (?, ?, ?, ?)
+                           ''', notifications_data)
+
+        self.conn.commit()
+
+    def seed_data(self):
+        """Заполнение БД начальными данными"""
+        cursor = self.conn.cursor()
+
+        # Проверяем, есть ли уже данные
+        cursor.execute("SELECT COUNT(*) FROM labs")
+        if cursor.fetchone()[0] > 0:
+            return
+
+        # Добавляем лаборатории
+        labs_data = [
+            ("Khalifa University Robotics Lab", "Khalifa University", "Abu Dhabi",
+             "Robotics & AI", "2024-01-15",
+             "Industrial Robots,Motion Capture System,Collaborative Robots,3D Vision Systems",
+             "State-of-the-art robotics laboratory specializing in humanoid robots, industrial automation, and AI-driven robotics research. Features 10 robotic workstations.",
+             "robotics.lab@ku.ac.ae", 1500, 4.8, None, 20,
+             "3D Printers,VR Equipment,Conference Room,High-Speed Internet"),
+
+            ("UAEU Advanced Materials Lab", "UAE University", "Al Ain",
+             "Materials Science", "2024-02-01", "SEM,X-ray Diffractometer,AFM,Tensile Testing Machine,Spectroscopy",
+             "Leading materials research facility with comprehensive characterization capabilities for nanomaterials, composites, and advanced alloys.",
+             "materials@uaeu.ac.ae", 1200, 4.6, None, 15, "Clean Room,Chemical Storage,Safety Equipment,Fume Hoods"),
+
+            ("DSO Drone Testing Zone", "Dubai Silicon Oasis", "Dubai",
+             "UAV Testing", "2024-01-10",
+             "Open Testing Field,Flight Monitoring Systems,Weather Station,Obstacle Course",
+             "Dedicated 30,000 sq.m outdoor facility for testing drone capabilities, autonomous flight systems, and aerial applications.",
+             "drones@dso.ae", 800, 4.9, None, 50, "Charging Stations,Control Tower,Safety Nets,Workshop"),
+
+            ("AUS Biotechnology Research Center", "American University of Sharjah", "Sharjah",
+             "Biotechnology", "2024-01-20", "PCR Machines,Cell Culture Facility,Flow Cytometer,Centrifuges,Incubators",
+             "Modern biotech lab focusing on genetic research, molecular biology, and biomedical applications. BSL-2 certified facility.",
+             "biotech@aus.edu", 1100, 4.7, None, 12, "Sterile Room,Cold Storage,Autoclave,Biosafety Cabinets"),
+
+            ("NYUAD Computer Vision Lab", "NYU Abu Dhabi", "Abu Dhabi",
+             "Computer Vision & AI", "2024-01-25",
+             "GPU Clusters,Motion Tracking Systems,High-Speed Cameras,VR/AR Equipment",
+             "Cutting-edge facility for computer vision research with 50+ GPU cluster and specialized imaging hardware.",
+             "vision@nyuad.ae", 1400, 4.8, None, 18, "Server Room,Dark Room,Green Screen Studio,Meeting Rooms"),
+
+            ("Masdar Institute Solar Testing Facility", "Masdar Institute", "Abu Dhabi",
+             "Renewable Energy", "2024-02-05",
+             "Solar Simulators,PV Testing Equipment,Weather Monitoring,Thermal Cameras",
+             "Outdoor and indoor testing facilities for solar panels, concentrated solar power, and energy storage systems.",
+             "solar@masdar.ac.ae", 1300, 4.9, None, 25, "Outdoor Test Field,Control Room,Data Center,Workshop"),
+
+            ("Zayed University 3D Printing Lab", "Zayed University", "Dubai",
+             "Advanced Manufacturing", "2024-01-18", "Industrial 3D Printers,Metal Printers,Scanners,CAD Workstations",
+             "Advanced additive manufacturing lab with 15+ 3D printers including metal, polymer, and ceramic printing capabilities.",
+             "3dlab@zu.ac.ae", 900, 4.5, None, 16, "Material Storage,Post-Processing Area,Design Studio,Training Room"),
+
+            ("UAEU Nanotechnology Center", "UAE University", "Al Ain",
+             "Nanotechnology", "2024-02-08", "Electron Microscopes,AFM,Chemical Vapor Deposition,Spin Coater",
+             "State-of-the-art nanofabrication and characterization facility for nanomaterials research and development.",
+             "nanotech@uaeu.ac.ae", 1600, 4.7, None, 10, "Clean Room Class 100,Chemical Lab,Characterization Suite"),
+
+            ("Ajman University IoT Lab", "Ajman University", "Ajman",
+             "IoT & Embedded Systems", "2024-01-30",
+             "IoT Development Kits,Sensor Arrays,Network Equipment,Oscilloscopes",
+             "Comprehensive IoT testing facility with various sensors, communication protocols, and edge computing devices.",
+             "iot@ajman.ac.ae", 700, 4.4, None, 20, "Electronics Workshop,Server Rack,Meeting Space,Component Storage"),
+
+            ("RAK Medical Simulation Center", "RAK Medical University", "Ras Al Khaimah",
+             "Medical Technology", "2024-02-12",
+             "Medical Simulators,VR Training Systems,Surgical Robots,Imaging Equipment",
+             "Advanced medical training facility with high-fidelity patient simulators and surgical training systems.",
+             "medsim@rakmhsu.ac.ae", 1800, 4.8, None, 30,
+             "Operating Theater,ICU Simulation,Debriefing Rooms,Control Center"),
+
+            ("Khalifa University Quantum Lab", "Khalifa University", "Abu Dhabi",
+             "Quantum Computing", "2024-02-15",
+             "Quantum Computer Access,Cryogenic Systems,Laser Systems,Control Electronics",
+             "One of the region's first quantum computing research facilities with access to quantum processors and simulators.",
+             "quantum@ku.ac.ae", 2500, 4.9, None, 8, "Shielded Room,Laser Safety Area,Theory Room,Visitor Center"),
+
+            ("University of Sharjah Chemistry Lab", "University of Sharjah", "Sharjah",
+             "Chemistry & Pharma", "2024-01-22", "NMR Spectrometer,Mass Spectrometer,HPLC,Gas Chromatograph",
+             "Comprehensive analytical chemistry lab supporting pharmaceutical research and chemical analysis.",
+             "chemistry@sharjah.ac.ae", 1000, 4.6, None, 14,
+             "Fume Hoods,Chemical Storage,Sample Prep Area,Instrument Room"),
+
+            ("HBMSU VR Learning Lab", "Hamdan Bin Mohammed Smart University", "Dubai",
+             "Virtual Reality & Education", "2024-02-03", "VR Headsets,Motion Capture,Haptic Devices,360° Cameras",
+             "Immersive learning environment with latest VR/AR technology for educational content development.",
+             "vrlab@hbmsu.ac.ae", 850, 4.5, None, 24,
+             "Motion Capture Studio,Development Stations,Demo Area,Content Library"),
+
+            ("ADU Autonomous Systems Lab", "Abu Dhabi University", "Abu Dhabi",
+             "Autonomous Systems", "2024-01-28", "Autonomous Vehicles,LIDAR Systems,GPS/INS,Simulation Software",
+             "Testing facility for autonomous ground and aerial vehicles with indoor and outdoor testing areas.",
+             "autonomous@adu.ac.ae", 1350, 4.7, None, 22, "Test Track,Simulation Room,Vehicle Bay,Control Center"),
+
+            ("Sorbonne Abu Dhabi AI Lab", "Sorbonne University Abu Dhabi", "Abu Dhabi",
+             "Artificial Intelligence", "2024-02-10",
+             "AI Workstations,Deep Learning Servers,Robot Platforms,Smart Sensors",
+             "Multidisciplinary AI research lab focusing on machine learning, NLP, and intelligent systems.",
+             "ailab@sorbonne.ae", 1150, 4.6, None, 20, "Server Farm,Collaboration Space,Demo Room,Library"),
+        ]
+
+        cursor.executemany('''
+                           INSERT INTO labs (name, university, location, specialty, available_from,
+                                             equipment, description, contact, price_per_day, rating,
+                                             image_url, capacity, amenities)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                           ''', labs_data)
+
+        # Добавляем пользователей и таланты
+        users_data = [
+            ("ahmed.mansouri@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Ahmed Al Mansouri", "talent", "Tech Innovations LLC"),
+            ("fatima.zaabi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Fatima Al Zaabi", "talent", "Analytics Solutions"),
+            ("rashid.marzouqi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Dr. Rashid Al Marzouqi", "talent", "Advanced Materials Research Center"),
+            ("sara.hashemi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Dr. Sara Al Hashemi", "talent", "BioTech Solutions"),
+            ("mohammed.qasimi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Mohammed Al Qasimi", "talent", "Neural Networks Lab"),
+            ("layla.shamsi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Layla Al Shamsi", "talent", "Sky Innovations"),
+            ("khalid.rahman@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Khalid Rahman", "talent", "IoT Systems Corp"),
+            ("mariam.ali@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Dr. Mariam Ali", "talent", "Renewable Energy Institute"),
+            ("omar.hassan@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Omar Hassan", "talent", "Autonomous Vehicles Lab"),
+            ("noura.abdullah@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Noura Abdullah", "talent", "3D Manufacturing Hub"),
+            ("youssef.ibrahim@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Dr. Youssef Ibrahim", "talent", "Quantum Computing Center"),
+            ("huda.salem@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Huda Salem", "talent", "Cybersecurity Solutions"),
+            ("tariq.ahmed@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Tariq Ahmed", "talent", "Blockchain Lab"),
+            ("aisha.muhammad@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Dr. Aisha Muhammad", "talent", "Nanotech Research Center"),
+            ("hassan.ali@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+             "Hassan Ali", "talent", "Computer Vision Institute"),
+        ]
+
+        for user_data in users_data:
+            cursor.execute('''
+                           INSERT INTO users (email, password_hash, name, user_type, organization)
+                           VALUES (?, ?, ?, ?, ?)
+                           ''', user_data)
+
+        # Добавляем таланты
+        talents_data = [
+            (1, "Robotics Engineer", "Abu Dhabi", "3 years", "MSc Robotics",
+             "Robotics,Computer Vision,Python,ROS,Arduino,MATLAB", "Part-time",
+             "Specialized in designing robotic control systems for industrial automation and research applications. Experience with humanoid robots and collaborative robotics.",
+             150, "github.com/ahmed-robotics", "linkedin.com/in/ahmed-mansouri", 4.7),
+
+            (2, "Data Scientist", "Abu Dhabi", "2 years", "MSc Computer Science",
+             "Machine Learning,Python,TensorFlow,PyTorch,SQL,Tableau", "Full-time",
+             "Expert in ML models and predictive analytics. Specialized in deep learning for financial forecasting and healthcare applications.",
+             120, "github.com/fatima-ml", "linkedin.com/in/fatima-zaabi", 4.5),
+
+            (3, "Materials Scientist", "Al Ain", "5 years", "PhD Materials Science",
+             "Materials Testing,Electron Microscopy,Thermal Analysis,X-ray Diffraction,Polymer Science", "Full-time",
+             "Published researcher specializing in nanomaterials and advanced composites for aerospace applications. 15+ peer-reviewed publications.",
+             180, None, "linkedin.com/in/rashid-marzouqi", 4.9),
+
+            (4, "Biotechnology Researcher", "Sharjah", "4 years", "PhD Biotechnology",
+             "PCR,Cell Culture,Molecular Biology,Biochemistry,CRISPR,Bioinformatics", "Contract",
+             "Expert in genetic engineering and molecular diagnostics. Developed rapid COVID-19 testing methods and working on cancer therapeutics.",
+             160, "researchgate.net/sara-hashemi", "linkedin.com/in/sara-hashemi", 4.8),
+
+            (5, "AI Developer", "Abu Dhabi", "3 years", "MSc Artificial Intelligence",
+             "Deep Learning,Computer Vision,TensorFlow,PyTorch,OpenCV,CUDA", "Remote",
+             "Specialized in neural network architecture and computer vision for retail analytics and smart city applications.",
+             140, "github.com/mohammed-ai", "linkedin.com/in/mohammed-qasimi", 4.6),
+
+            (6, "Drone Specialist", "Dubai", "2 years", "BSc Aerospace Engineering",
+             "UAV Systems,Flight Control,Aerial Photography,Mapping,LiDAR,Photogrammetry", "Full-time",
+             "Licensed drone pilot with expertise in autonomous flight systems and aerial surveying for construction and agriculture.",
+             110, "dronepilot.ae/layla", "linkedin.com/in/layla-shamsi", 4.4),
+
+            (7, "IoT Solutions Architect", "Dubai", "6 years", "MSc Electrical Engineering",
+             "IoT,Embedded Systems,C++,Python,MQTT,LoRaWAN,Edge Computing", "Full-time",
+             "Designed and deployed large-scale IoT networks for smart buildings and industrial monitoring with 50+ successful projects.",
+             170, None, "linkedin.com/in/khalid-rahman", 4.8),
+
+            (8, "Solar Energy Expert", "Abu Dhabi", "7 years", "PhD Renewable Energy",
+             "Solar PV,Energy Storage,MATLAB,Homer Pro,Grid Integration,Energy Modeling", "Contract",
+             "Leading expert in solar energy systems design and optimization for desert climates. Consulted on 10+ MW-scale projects.",
+             200, "solarexpert.ae/mariam", "linkedin.com/in/mariam-ali", 4.9),
+
+            (9, "Autonomous Systems Engineer", "Dubai", "4 years", "MSc Mechatronics",
+             "Self-Driving Cars,SLAM,ROS,C++,Sensor Fusion,Path Planning", "Full-time",
+             "Specialized in autonomous navigation algorithms and sensor integration for self-driving vehicles in urban environments.",
+             155, "github.com/omar-autonomous", "linkedin.com/in/omar-hassan", 4.7),
+
+            (10, "3D Printing Specialist", "Sharjah", "3 years", "BSc Mechanical Engineering",
+             "3D Printing,CAD,SolidWorks,Fusion 360,Material Science,Rapid Prototyping", "Part-time",
+             "Expert in additive manufacturing for aerospace and medical applications. Certified in metal and polymer 3D printing.",
+             130, "3dportfolio.ae/noura", "linkedin.com/in/noura-abdullah", 4.5),
+
+            (11, "Quantum Computing Researcher", "Abu Dhabi", "5 years", "PhD Physics",
+             "Quantum Algorithms,Qiskit,Python,Quantum Mechanics,Cryptography,Linear Algebra", "Remote",
+             "Research scientist working on quantum computing applications for optimization and cryptography problems.",
+             220, "quantumresearch.ae/youssef", "linkedin.com/in/youssef-ibrahim", 4.9),
+
+            (12, "Cybersecurity Analyst", "Dubai", "4 years", "MSc Information Security",
+             "Penetration Testing,Network Security,Python,Ethical Hacking,SIEM,Forensics", "Full-time",
+             "Certified ethical hacker with expertise in vulnerability assessment and security architecture for critical infrastructure.",
+             145, None, "linkedin.com/in/huda-salem", 4.6),
+
+            (13, "Blockchain Developer", "Dubai", "3 years", "BSc Computer Science",
+             "Solidity,Ethereum,Smart Contracts,Web3,JavaScript,Hyperledger", "Contract",
+             "Developed DeFi applications and supply chain solutions on blockchain. Expert in smart contract security and optimization.",
+             135, "github.com/tariq-blockchain", "linkedin.com/in/tariq-ahmed", 4.5),
+
+            (14, "Nanotechnology Researcher", "Al Ain", "6 years", "PhD Nanotechnology",
+             "Nanomaterials,AFM,SEM,Chemical Synthesis,Drug Delivery,Characterization", "Full-time",
+             "Leading researcher in nanomedicine and targeted drug delivery systems. 20+ publications in high-impact journals.",
+             190, "nanotech.ae/aisha", "linkedin.com/in/aisha-muhammad", 4.8),
+
+            (15, "Computer Vision Engineer", "Abu Dhabi", "4 years", "MSc Computer Engineering",
+             "Computer Vision,Deep Learning,OpenCV,Python,YOLO,Image Processing", "Remote",
+             "Specialized in real-time object detection and tracking systems for surveillance and autonomous systems.",
+             150, "github.com/hassan-cv", "linkedin.com/in/hassan-ali", 4.7),
+        ]
+
+        cursor.executemany('''
+                           INSERT INTO talents (user_id, title, location, experience, education,
+                                                skills, availability, bio, hourly_rate, portfolio_url,
+                                                linkedin_url, rating)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                           ''', talents_data)
+
+        self.conn.commit()
 
 
-def load_bookings_data():
-    # In a real application, this would be stored in a database
-    if not os.path.exists('bookings.json'):
-        return []
-
-    try:
-        with open('bookings.json', 'r') as f:
-            return json.load(f)
-    except:
-        return []
-
-
-def save_booking(booking):
-    bookings = load_bookings_data()
-    booking['booking_id'] = len(bookings) + 1
-    bookings.append(booking)
-
-    with open('bookings.json', 'w') as f:
-        json.dump(bookings, f)
-
-
-def load_job_listings():
-    # In a real application, this would be stored in a database
-    if not os.path.exists('job_listings.json'):
-        return []
-
-    try:
-        with open('job_listings.json', 'r') as f:
-            return json.load(f)
-    except:
-        return []
-
-
-def save_job_listing(job):
-    jobs = load_job_listings()
-    job['job_id'] = len(jobs) + 1
-    job['date_posted'] = datetime.datetime.now().strftime("%Y-%m-%d")
-    job['status'] = 'Open'
-    jobs.append(job)
-
-    with open('job_listings.json', 'w') as f:
-        json.dump(jobs, f)
-
-
-def load_service_offerings():
-    # In a real application, this would be stored in a database
-    if not os.path.exists('services.json'):
-        return []
-
-    try:
-        with open('services.json', 'r') as f:
-            return json.load(f)
-    except:
-        return []
-
-
-def save_service_offering(service):
-    services = load_service_offerings()
-    service['service_id'] = len(services) + 1
-    service['date_posted'] = datetime.datetime.now().strftime("%Y-%m-%d")
-    services.append(service)
-
-    with open('services.json', 'w') as f:
-        json.dump(services, f)
-
-
-def load_applications():
-    # In a real application, this would be stored in a database
-    if not os.path.exists('applications.json'):
-        return []
-
-    try:
-        with open('applications.json', 'r') as f:
-            return json.load(f)
-    except:
-        return []
-
-
-def save_application(application):
-    applications = load_applications()
-    application['application_id'] = len(applications) + 1
-    application['date_applied'] = datetime.datetime.now().strftime("%Y-%m-%d")
-    application['status'] = 'Pending'
-    applications.append(application)
-
-    with open('applications.json', 'w') as f:
-        json.dump(applications, f)
-
-
-def get_placeholder_image(image_name, is_lab=True):
-    """
-    This function would normally return the actual image, but for this demonstration
-    we'll return a placeholder. In a real application, these would be actual images
-    stored in a database or file system.
-    """
-    if is_lab:
-        return f"https://via.placeholder.com/300x200?text=Lab+Image"
-    else:
-        return f"https://via.placeholder.com/200x200?text=Profile+Image"
-
-
-# Custom CSS
-def apply_custom_css():
+# ==================== СТИЛИ ====================
+def load_css():
     st.markdown("""
     <style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #2c3e50;
-        text-align: center;
-        margin-bottom: 1rem;
-    }
-    .sub-header {
-        font-size: 1.8rem;
-        color: #34495e;
-        margin-bottom: 1rem;
-    }
-    .card {
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin-bottom: 1rem;
-        background-color: white;
-    }
-    .highlight {
-        background-color: #f1c40f;
-        padding: 0.2rem 0.5rem;
-        border-radius: 5px;
-    }
-    .btn-book {
-        background-color: #2ecc71;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        text-align: center;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-    }
-    .btn-apply {
-        background-color: #3498db;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        text-align: center;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-    }
-    .rating {
-        color: #f39c12;
-        font-weight: bold;
-    }
-    .detail-label {
-        font-weight: bold;
-        color: #7f8c8d;
-    }
-    .nav-link {
-        text-decoration: none;
-        color: #3498db;
-        font-weight: bold;
-    }
-    .nav-link:hover {
-        color: #2980b9;
-    }
+        /* Основные стили */
+        .main {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #ffffff;
+        }
+
+        /* Анимированный градиент для заголовков */
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .gradient-text {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+
+        /* Карточки с эффектом стекла */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Кнопки с градиентом */
+        .gradient-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.4);
+        }
+
+        .gradient-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.6);
+        }
+
+        /* Навигация */
+        .nav-container {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin: 0 0.5rem;
+        }
+
+        .nav-item:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item.active {
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Статус бейджи */
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-active {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+            border: 1px solid #34d399;
+        }
+
+        .status-pending {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid #fbbf24;
+        }
+
+        .status-completed {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            border: 1px solid #60a5fa;
+        }
+
+        /* Теги */
+        .skill-tag {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            margin: 0.2rem;
+            display: inline-block;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        /* Анимация загрузки */
+        .loading-dots {
+            display: inline-block;
+            position: relative;
+            width: 80px;
+            height: 20px;
+        }
+
+        .loading-dots div {
+            position: absolute;
+            top: 8px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #667eea;
+            animation-timing-function: cubic-bezier(0, 1, 1, 0);
+        }
+
+        .loading-dots div:nth-child(1) {
+            left: 8px;
+            animation: loading-dots1 0.6s infinite;
+        }
+
+        .loading-dots div:nth-child(2) {
+            left: 32px;
+            animation: loading-dots2 0.6s infinite;
+        }
+
+        .loading-dots div:nth-child(3) {
+            left: 56px;
+            animation: loading-dots2 0.6s infinite;
+        }
+
+        @keyframes loading-dots1 {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes loading-dots2 {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(24px, 0); }
+        }
+
+        /* Метрики дашборда */
+        .metric-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .metric-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Уведомления */
+        .notification {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .notification.unread {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        /* Календарь */
+        .calendar-day {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-day:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .calendar-day.booked {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+        }
+
+        .calendar-day.available {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid #22c55e;
+        }
+
+        /* Форма поиска */
+        .search-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+            display: flex;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .search-input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            outline: none;
+            padding: 0.5rem;
+        }
+
+        /* Прогресс бар */
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        /* Рейтинг звезды */
+        .rating-stars {
+            color: #fbbf24;
+            font-size: 1.2rem;
+        }
+
+        /* Тултипы */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Скроллбар */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
     </style>
     """, unsafe_allow_html=True)
 
 
-# Login functionality
-def login_page():
-    st.markdown("<h1 class='main-header'>LabConnect Login</h1>", unsafe_allow_html=True)
+# ==================== УТИЛИТЫ ====================
+@st.cache_data
+def load_lottie_url(url: str):
+    """Загрузка Lottie анимации"""
+    try:
+        r = requests.get(url)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except:
+        return None
+
+
+def create_rating_stars(rating: float) -> str:
+    """Создание HTML для звезд рейтинга"""
+    full_stars = int(rating)
+    half_star = 1 if rating - full_stars >= 0.5 else 0
+    empty_stars = 5 - full_stars - half_star
+
+    stars_html = "★" * full_stars
+    if half_star:
+        stars_html += "☆"
+    stars_html += "☆" * empty_stars
+
+    return f'<span class="rating-stars">{stars_html}</span> {rating:.1f}'
+
+
+# ==================== КОМПОНЕНТЫ ====================
+class AuthManager:
+    """Менеджер аутентификации"""
+
+    @staticmethod
+    def hash_password(password: str) -> str:
+        return hashlib.sha256(password.encode()).hexdigest()
+
+    @staticmethod
+    def login(email: str, password: str, db: Database) -> Optional[Dict]:
+        cursor = db.conn.cursor()
+        cursor.execute("""
+                       SELECT id, email, name, user_type, organization
+                       FROM users
+                       WHERE email = ?
+                         AND password_hash = ?
+                       """, (email, AuthManager.hash_password(password)))
+
+        user = cursor.fetchone()
+        if user:
+            return dict(user)
+        return None
+
+    @staticmethod
+    def register(email: str, password: str, name: str, user_type: str,
+                 organization: str, db: Database) -> bool:
+        try:
+            cursor = db.conn.cursor()
+            cursor.execute("""
+                           INSERT INTO users (email, password_hash, name, user_type, organization)
+                           VALUES (?, ?, ?, ?, ?)
+                           """, (email, AuthManager.hash_password(password), name, user_type, organization))
+            db.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+
+class NotificationManager:
+    """Менеджер уведомлений"""
+
+    @staticmethod
+    def create_notification(user_id: int, title: str, message: str,
+                            notification_type: str, db: Database):
+        cursor = db.conn.cursor()
+        cursor.execute("""
+                       INSERT INTO notifications (user_id, title, message, type)
+                       VALUES (?, ?, ?, ?)
+                       """, (user_id, title, message, notification_type))
+        db.conn.commit()
+
+    @staticmethod
+    def get_unread_count(user_id: int, db: Database) -> int:
+        cursor = db.conn.cursor()
+        cursor.execute("""
+                       SELECT COUNT(*)
+                       FROM notifications
+                       WHERE user_id = ?
+                         AND is_read = FALSE
+                       """, (user_id,))
+        return cursor.fetchone()[0]
+
+    @staticmethod
+    def get_notifications(user_id: int, db: Database, limit: int = 10):
+        cursor = db.conn.cursor()
+        cursor.execute("""
+                       SELECT *
+                       FROM notifications
+                       WHERE user_id = ?
+                       ORDER BY created_at DESC LIMIT ?
+                       """, (user_id, limit))
+        return cursor.fetchall()
+
+
+# ==================== СТРАНИЦЫ ====================
+def show_login_page(db: Database):
+    """Страница входа и регистрации"""
 
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        user_type = st.selectbox("Login as", ["Lab Owner", "Researcher", "Lab Talent"])
-
-        if st.button("Login"):
-            # In a real application, you would validate credentials against a database
-            if username and password:  # Simple validation for demonstration
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.session_state.user_type = user_type
-                st.success(f"Welcome, {username}!")
-                st.rerun()
-            else:
-                st.error("Invalid username or password")
-
-        if st.button("Register"):
-            # In a real application, this would take you to a registration page
-            st.info("In a real application, this would open a registration form.")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-
-# Navigation sidebar
-def show_sidebar():
-    with st.sidebar:
-        st.image("https://via.placeholder.com/150?text=LabConnect", width=150)
-        st.title("LabConnect")
-        st.markdown(f"Welcome, {st.session_state.username}")
-        st.markdown(f"Logged in as: {st.session_state.user_type}")
-
-        st.markdown("### Navigation")
-        if st.button("Home"):
-            st.session_state.current_page = "Home"
-            st.rerun()
-        if st.button("Book Labs"):
-            st.session_state.current_page = "Book Labs"
-            st.rerun()
-        if st.button("Find Testing Labs"):
-            st.session_state.current_page = "Find Testing Labs"
-            st.rerun()
-        if st.button("Find Talents"):
-            st.session_state.current_page = "Find Talents"
-            st.rerun()
-        if st.button("Hire Talents"):
-            st.session_state.current_page = "Hire Talents"
-            st.rerun()
-        if st.button("Offer Lab Services"):
-            st.session_state.current_page = "Offer Lab Services"
-            st.rerun()
-        if st.button("My Dashboard"):
-            st.session_state.current_page = "Dashboard"
-            st.rerun()
-
-        if st.button("Logout"):
-            st.session_state.logged_in = False
-            st.session_state.username = ""
-            st.session_state.user_type = ""
-            st.rerun()
-
-
-# Home page
-def home_page():
-    st.markdown("<h1 class='main-header'>Welcome to LabConnect</h1>", unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class='card'>
-    <p>LabConnect is your one-stop platform for all laboratory-related needs:</p>
-    <ul>
-        <li>Book laboratory spaces for your research and testing needs</li>
-        <li>Find specialized testing laboratories for your samples</li>
-        <li>Connect with talented researchers and lab specialists</li>
-        <li>Post job opportunities and hire the right talent</li>
-        <li>Offer your laboratory services to potential clients</li>
-    </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("<h2 class='sub-header'>Featured Labs</h2>", unsafe_allow_html=True)
-        labs_data = load_labs_data()
-        featured_labs = labs_data.sample(3)
-
-        for _, lab in featured_labs.iterrows():
-            st.markdown(f"""
-            <div class='card'>
-                <h3>{lab['name']}</h3>
-                <p><span class='detail-label'>Location:</span> {lab['location']}</p>
-                <p><span class='detail-label'>Specialization:</span> {lab['specialization']}</p>
-                <p><span class='detail-label'>Rating:</span> <span class='rating'>{'★' * int(lab['rating'])} ({lab['rating']})</span></p>
-                <a href='#' class='btn-book'>View Details</a>
-            </div>
-            """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("<h2 class='sub-header'>Featured Talents</h2>", unsafe_allow_html=True)
-        talents_data = load_talents_data()
-        featured_talents = talents_data.sample(3)
-
-        for _, talent in featured_talents.iterrows():
-            st.markdown(f"""
-            <div class='card'>
-                <h3>{talent['name']}</h3>
-                <p><span class='detail-label'>Specialization:</span> {talent['specialization']}</p>
-                <p><span class='detail-label'>Experience:</span> {talent['experience_years']} years</p>
-                <p><span class='detail-label'>Rating:</span> <span class='rating'>{'★' * int(talent['rating'])} ({talent['rating']})</span></p>
-                <a href='#' class='btn-apply'>View Profile</a>
-            </div>
-            """, unsafe_allow_html=True)
-
-    st.markdown("<h2 class='sub-header'>How It Works</h2>", unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown("""
-        <div class='card' style='text-align: center;'>
-            <h3>For Researchers</h3>
-            <p>Find and book labs that match your research needs</p>
-            <p>Connect with skilled lab professionals</p>
-            <p>Get your samples tested at specialized facilities</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("""
-        <div class='card' style='text-align: center;'>
-            <h3>For Lab Owners</h3>
-            <p>List your laboratory spaces for booking</p>
-            <p>Offer specialized testing services</p>
-            <p>Maximize your lab's utilization and revenue</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown("""
-        <div class='card' style='text-align: center;'>
-            <h3>For Lab Professionals</h3>
-            <p>Showcase your skills and experience</p>
-            <p>Find research and lab positions</p>
-            <p>Connect with labs and researchers worldwide</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-# Book Labs page
-def book_labs_page():
-    st.markdown("<h1 class='main-header'>Book Laboratory Spaces</h1>", unsafe_allow_html=True)
-
-    # Filters
-    st.markdown("<h2 class='sub-header'>Find the Perfect Lab for Your Needs</h2>", unsafe_allow_html=True)
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        location_filter = st.selectbox("Location", ["All Locations", "New York, NY", "Boston, MA", "San Francisco, CA",
-                                                    "Chicago, IL", "Houston, TX", "Seattle, WA", "Austin, TX",
-                                                    "Denver, CO", "Atlanta, GA", "Miami, FL"])
-
-    with col2:
-        specialization_filter = st.selectbox("Specialization",
-                                             ["All Specializations", "Genetic Research", "Chemical Analysis",
-                                              "Molecular Biology", "Materials Science", "Medical Testing",
-                                              "Environmental Testing", "Pharmaceutical Research",
-                                              "Food Safety Testing", "Nanotechnology", "Quantum Physics"])
-
-    with col3:
-        price_range = st.slider("Price Range ($/hour)", 0, 300, (100, 200))
-
-    with col4:
-        availability_filter = st.checkbox("Show only available labs", value=True)
-
-    # Load and filter labs data
-    labs_data = load_labs_data()
-
-    if location_filter != "All Locations":
-        labs_data = labs_data[labs_data['location'] == location_filter]
-
-    if specialization_filter != "All Specializations":
-        labs_data = labs_data[labs_data['specialization'] == specialization_filter]
-
-    labs_data = labs_data[(labs_data['price_per_hour'] >= price_range[0]) &
-                          (labs_data['price_per_hour'] <= price_range[1])]
-
-    if availability_filter:
-        labs_data = labs_data[labs_data['available'] == True]
-
-    # Display labs
-    if len(labs_data) == 0:
-        st.warning("No labs match your criteria. Please adjust your filters.")
-    else:
-        st.markdown(f"<p>Found {len(labs_data)} labs matching your criteria</p>", unsafe_allow_html=True)
-
-        for i in range(0, len(labs_data), 2):
-            col1, col2 = st.columns(2)
-
-            if i < len(labs_data):
-                lab = labs_data.iloc[i]
-                with col1:
-                    lab_card(lab)
-
-            if i + 1 < len(labs_data):
-                lab = labs_data.iloc[i + 1]
-                with col2:
-                    lab_card(lab)
-
-
-def lab_card(lab):
-    st.markdown(f"""
-    <div class='card'>
-        <h3>{lab['name']}</h3>
-        <p><span class='detail-label'>Location:</span> {lab['location']}</p>
-        <p><span class='detail-label'>Specialization:</span> {lab['specialization']}</p>
-        <p><span class='detail-label'>Price:</span> ${lab['price_per_hour']}/hour</p>
-        <p><span class='detail-label'>Rating:</span> <span class='rating'>{'★' * int(lab['rating'])} ({lab['rating']})</span></p>
-        <p><span class='detail-label'>Status:</span> {"Available" if lab['available'] else "Currently Booked"}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if lab['available']:
-        if st.button(f"Book {lab['name']}", key=f"book_{lab['lab_id']}"):
-            st.session_state.selected_lab = lab
-            st.session_state.current_page = "Lab Booking"
-            st.rerun()
-
-    if st.button(f"View Details for {lab['name']}", key=f"details_{lab['lab_id']}"):
-        st.session_state.selected_lab = lab
-        st.session_state.current_page = "Lab Details"
-        st.rerun()
-
-
-# Lab Details page
-def lab_details_page():
-    lab = st.session_state.selected_lab
-
-    st.markdown(f"<h1 class='main-header'>{lab['name']}</h1>", unsafe_allow_html=True)
-
-    col1, col2 = st.columns([1, 2])
-
-    with col1:
-        st.image(get_placeholder_image(lab['image']), caption=lab['name'])
-
-    with col2:
-        st.markdown(f"""
-        <div class='card'>
-            <p>{lab['description']}</p>
-            <p><span class='detail-label'>Location:</span> {lab['location']}</p>
-            <p><span class='detail-label'>Specialization:</span> {lab['specialization']}</p>
-            <p><span class='detail-label'>Price:</span> ${lab['price_per_hour']}/hour</p>
-            <p><span class='detail-label'>Rating:</span> <span class='rating'>{'★' * int(lab['rating'])} ({lab['rating']})</span></p>
-            <p><span class='detail-label'>Status:</span> {"Available" if lab['available'] else "Currently Booked"}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<h2 class='sub-header'>Services Offered</h2>", unsafe_allow_html=True)
-
-    services_list = ", ".join(lab['services'])
-    st.markdown(f"""
-    <div class='card'>
-        <p>{services_list}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("<h2 class='sub-header'>Equipment Available</h2>", unsafe_allow_html=True)
-
-    equipment_list = ", ".join(lab['equipment'])
-    st.markdown(f"""
-    <div class='card'>
-        <p>{equipment_list}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if lab['available']:
-        if st.button("Book This Lab"):
-            st.session_state.current_page = "Lab Booking"
-            st.rerun()
-
-    if st.button("Back to Labs"):
-        st.session_state.current_page = "Book Labs"
-        st.rerun()
-
-
-# Lab Booking page
-def lab_booking_page():
-    lab = st.session_state.selected_lab
-
-    st.markdown(f"<h1 class='main-header'>Book {lab['name']}</h1>", unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown(f"""
-        <div class='card'>
-            <h3>Lab Details</h3>
-            <p><span class='detail-label'>Name:</span> {lab['name']}</p>
-            <p><span class='detail-label'>Location:</span> {lab['location']}</p>
-            <p><span class='detail-label'>Specialization:</span> {lab['specialization']}</p>
-            <p><span class='detail-label'>Price:</span> ${lab['price_per_hour']}/hour</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h3>Booking Details</h3>", unsafe_allow_html=False)
-
-        booking_date = st.date_input("Booking Date", datetime.datetime.now() + datetime.timedelta(days=1))
-
-        start_time = st.time_input("Start Time", datetime.time(9, 0))
-        end_time = st.time_input("End Time", datetime.time(17, 0))
-
-        # Calculate total hours and cost
-        start_datetime = datetime.datetime.combine(booking_date, start_time)
-        end_datetime = datetime.datetime.combine(booking_date, end_time)
-        duration_hours = (end_datetime - start_datetime).total_seconds() / 3600
-
-        if duration_hours <= 0:
-            st.error("End time must be after start time")
-        else:
-            total_cost = duration_hours * lab['price_per_hour']
-            st.markdown(f"<p><span class='detail-label'>Duration:</span> {duration_hours:.2f} hours</p>",
-                        unsafe_allow_html=True)
-            st.markdown(f"<p><span class='detail-label'>Total Cost:</span> ${total_cost:.2f}</p>",
-                        unsafe_allow_html=True)
-
-        purpose = st.text_area("Purpose of Booking", height=100)
-        special_requests = st.text_area("Special Requests (equipment, setup, etc.)", height=100)
-
-        if st.button("Confirm Booking"):
-            if duration_hours <= 0:
-                st.error("End time must be after start time")
-            elif not purpose:
-                st.error("Please provide the purpose of your booking")
-            else:
-                booking = {
-                    "lab_id": lab['lab_id'],
-                    "lab_name": lab['name'],
-                    "user": st.session_state.username,
-                    "booking_date": booking_date.strftime("%Y-%m-%d"),
-                    "start_time": start_time.strftime("%H:%M"),
-                    "end_time": end_time.strftime("%H:%M"),
-                    "duration_hours": duration_hours,
-                    "total_cost": total_cost,
-                    "purpose": purpose,
-                    "special_requests": special_requests,
-                    "status": "Confirmed"
-                }
-
-                save_booking(booking)
-                st.success("Booking confirmed! You can view the details in your dashboard.")
-                if st.button("Go to Dashboard"):
-                    st.session_state.current_page = "Dashboard"
-                    st.rerun()
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    if st.button("Cancel"):
-        st.session_state.current_page = "Book Labs"
-        st.rerun()
-
-
-# Find Testing Labs page
-def find_testing_labs_page():
-    st.markdown("<h1 class='main-header'>Find Testing Labs</h1>", unsafe_allow_html=True)
-
-    # Filters
-    st.markdown("<h2 class='sub-header'>Find Specialized Testing Services</h2>", unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        test_type = st.selectbox("Test Type", ["All Types", "DNA Analysis", "Chemical Analysis", "Materials Testing",
-                                               "Food Safety Testing", "Environmental Testing", "Medical Testing",
-                                               "Pharmaceutical Testing", "Structural Analysis", "Electronic Testing"])
-
-    with col2:
-        location_filter = st.selectbox("Location", ["All Locations", "New York, NY", "Boston, MA", "San Francisco, CA",
-                                                    "Chicago, IL", "Houston, TX", "Seattle, WA", "Austin, TX",
-                                                    "Denver, CO", "Atlanta, GA", "Miami, FL"])
-
-    with col3:
-        turnaround_time = st.selectbox("Turnaround Time",
-                                       ["Any", "Same Day", "1-2 Days", "3-5 Days", "1 Week", "2+ Weeks"])
-
-    # In a real application, this would query a database of testing services
-    # For this demo, we'll use the labs data and filter based on their services
-    labs_data = load_labs_data()
-    testing_labs = []
-
-    for _, lab in labs_data.iterrows():
-        services_lower = [s.lower() for s in lab['services']]
-
-        if test_type != "All Types":
-            if test_type.lower() not in " ".join(services_lower):
-                continue
-
-        if location_filter != "All Locations":
-            if lab['location'] != location_filter:
-                continue
-
-        # Add some random turnaround times for demonstration
-        turnaround_options = ["Same Day", "1-2 Days", "3-5 Days", "1 Week", "2+ Weeks"]
-        lab_turnaround = random.choice(turnaround_options)
-
-        if turnaround_time != "Any":
-            if lab_turnaround != turnaround_time:
-                continue
-
-        lab_copy = lab.copy()
-        lab_copy['turnaround_time'] = lab_turnaround
-        testing_labs.append(lab_copy)
-
-    # Display testing labs
-    if len(testing_labs) == 0:
-        st.warning("No testing labs match your criteria. Please adjust your filters.")
-    else:
-        st.markdown(f"<p>Found {len(testing_labs)} testing labs matching your criteria</p>", unsafe_allow_html=True)
-
-        for i in range(0, len(testing_labs), 2):
-            col1, col2 = st.columns(2)
-
-            if i < len(testing_labs):
-                lab = testing_labs[i]
-                with col1:
-                    testing_lab_card(lab)
-
-            if i + 1 < len(testing_labs):
-                lab = testing_labs[i + 1]
-                with col2:
-                    testing_lab_card(lab)
-
-
-def testing_lab_card(lab):
-    services_list = ", ".join(lab['services'][:3])
-    if len(lab['services']) > 3:
-        services_list += ", and more..."
-
-    st.markdown(f"""
-    <div class='card'>
-        <h3>{lab['name']}</h3>
-        <p><span class='detail-label'>Location:</span> {lab['location']}</p>
-        <p><span class='detail-label'>Specialization:</span> {lab['specialization']}</p>
-        <p><span class='detail-label'>Testing Services:</span> {services_list}</p>
-        <p><span class='detail-label'>Turnaround Time:</span> {lab['turnaround_time']}</p>
-        <p><span class='detail-label'>Rating:</span> <span class='rating'>{'★' * int(lab['rating'])} ({lab['rating']})</span></p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button(f"Request Quote from {lab['name']}", key=f"quote_{lab['lab_id']}"):
-            st.session_state.selected_lab = lab
-            st.session_state.current_page = "Testing Quote"
-            st.rerun()
-
-    with col2:
-        if st.button(f"View Details for {lab['name']}", key=f"test_details_{lab['lab_id']}"):
-            st.session_state.selected_lab = lab
-            st.session_state.current_page = "Testing Lab Details"
-            st.rerun()
-
-
-# Testing Quote Request page
-def testing_quote_page():
-    lab = st.session_state.selected_lab
-
-    st.markdown(f"<h1 class='main-header'>Request Testing Quote from {lab['name']}</h1>", unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown(f"""
-        <div class='card'>
-            <h3>Lab Details</h3>
-            <p><span class='detail-label'>Name:</span> {lab['name']}</p>
-            <p><span class='detail-label'>Location:</span> {lab['location']}</p>
-            <p><span class='detail-label'>Specialization:</span> {lab['specialization']}</p>
-            <p><span class='detail-label'>Turnaround Time:</span> {lab['turnaround_time']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h3>Available Testing Services</h3>", unsafe_allow_html=False)
-        for service in lab['services']:
-            st.markdown(f"- {service}")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h3>Testing Request Details</h3>", unsafe_allow_html=False)
-
-        test_type = st.selectbox("Test Type", lab['services'])
-        sample_description = st.text_area("Sample Description", height=100)
-        number_of_samples = st.number_input("Number of Samples", min_value=1, value=1)
-        special_requests = st.text_area("Special Requirements or Instructions", height=100)
-
-        required_by_date = st.date_input("Results Required By", datetime.datetime.now() + datetime.timedelta(days=7))
-
-        contact_name = st.text_input("Contact Name", value=st.session_state.username)
-        contact_email = st.text_input("Contact Email")
-        contact_phone = st.text_input("Contact Phone")
-
-        if st.button("Submit Testing Quote Request"):
-            if not sample_description:
-                st.error("Please provide a sample description")
-            elif not contact_email:
-                st.error("Please provide a contact email")
-            else:
-                # In a real application, this would be saved to a database and sent to the lab
-                st.success(
-                    "Your testing quote request has been submitted. The lab will contact you shortly with pricing information.")
-                if st.button("Return to Testing Labs"):
-                    st.session_state.current_page = "Find Testing Labs"
-                    st.rerun()
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    if st.button("Cancel"):
-        st.session_state.current_page = "Find Testing Labs"
-        st.rerun()
-
-
-# Testing Lab Details page
-def testing_lab_details_page():
-    lab = st.session_state.selected_lab
-
-    st.markdown(f"<h1 class='main-header'>{lab['name']} - Testing Services</h1>", unsafe_allow_html=True)
-
-    col1, col2 = st.columns([1, 2])
-
-    with col1:
-        st.image(get_placeholder_image(lab['image']), caption=lab['name'])
-
-    with col2:
-        st.markdown(f"""
-        <div class='card'>
-            <p>{lab['description']}</p>
-            <p><span class='detail-label'>Location:</span> {lab['location']}</p>
-            <p><span class='detail-label'>Specialization:</span> {lab['specialization']}</p>
-            <p><span class='detail-label'>Turnaround Time:</span> {lab['turnaround_time']}</p>
-            <p><span class='detail-label'>Rating:</span> <span class='rating'>{'★' * int(lab['rating'])} ({lab['rating']})</span></p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<h2 class='sub-header'>Testing Services</h2>", unsafe_allow_html=True)
-
-    for service in lab['services']:
-        st.markdown(f"""
-        <div class='card'>
-            <h3>{service}</h3>
-            <p>This is a detailed description of the {service.lower()} service offered by {lab['name']}. 
-            In a real application, this would include detailed information about the testing methodology, 
-            equipment used, detection limits, and pricing information.</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<h2 class='sub-header'>Testing Equipment</h2>", unsafe_allow_html=True)
-
-    equipment_list = ", ".join(lab['equipment'])
-    st.markdown(f"""
-    <div class='card'>
-        <p>{equipment_list}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if st.button("Request Testing Quote"):
-        st.session_state.current_page = "Testing Quote"
-        st.rerun()
-
-    if st.button("Back to Testing Labs"):
-        st.session_state.current_page = "Find Testing Labs"
-        st.rerun()
-
-
-# Find Talents page
-def find_talents_page():
-    st.markdown("<h1 class='main-header'>Find Lab Talents</h1>", unsafe_allow_html=True)
-
-    # Filters
-    st.markdown("<h2 class='sub-header'>Find Specialized Lab Professionals</h2>", unsafe_allow_html=True)
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        specialization_filter = st.selectbox("Specialization",
-                                             ["All Specializations", "Molecular Biology", "Analytical Chemistry",
-                                              "Microbiology", "Materials Science", "Biochemistry",
-                                              "Environmental Science", "Pharmaceutical Sciences",
-                                              "Food Science", "Nanotechnology", "Quantum Physics"])
-
-    with col2:
-        min_experience = st.slider("Minimum Experience (years)", 0, 25, 3)
-
-    with col3:
-        rate_range = st.slider("Hourly Rate Range ($)", 0, 150, (50, 100))
-
-    with col4:
-        availability_filter = st.checkbox("Show only available talents", value=True)
-
-    # Load and filter talents data
-    talents_data = load_talents_data()
-
-    if specialization_filter != "All Specializations":
-        talents_data = talents_data[talents_data['specialization'] == specialization_filter]
-
-    talents_data = talents_data[talents_data['experience_years'] >= min_experience]
-
-    talents_data = talents_data[(talents_data['hourly_rate'] >= rate_range[0]) &
-                                (talents_data['hourly_rate'] <= rate_range[1])]
-
-    if availability_filter:
-        talents_data = talents_data[talents_data['available'] == True]
-
-    # Display talents
-    if len(talents_data) == 0:
-        st.warning("No talents match your criteria. Please adjust your filters.")
-    else:
-        st.markdown(f"<p>Found {len(talents_data)} talents matching your criteria</p>", unsafe_allow_html=True)
-
-        for i in range(0, len(talents_data), 3):
-            cols = st.columns(3)
-
-            for j in range(3):
-                if i + j < len(talents_data):
-                    talent = talents_data.iloc[i + j]
-                    with cols[j]:
-                        talent_card(talent)
-
-
-def talent_card(talent):
-    skills_list = ", ".join(talent['skills'][:3])
-    if len(talent['skills']) > 3:
-        skills_list += ", and more..."
-
-    st.markdown(f"""
-    <div class='card'>
-        <h3>{talent['name']}</h3>
-        <p><span class='detail-label'>Specialization:</span> {talent['specialization']}</p>
-        <p><span class='detail-label'>Experience:</span> {talent['experience_years']} years</p>
-        <p><span class='detail-label'>Education:</span> {talent['education']}</p>
-        <p><span class='detail-label'>Skills:</span> {skills_list}</p>
-        <p><span class='detail-label'>Hourly Rate:</span> ${talent['hourly_rate']}</p>
-        <p><span class='detail-label'>Rating:</span> <span class='rating'>{'★' * int(talent['rating'])} ({talent['rating']})</span></p>
-        <p><span class='detail-label'>Status:</span> {"Available" if talent['available'] else "Currently Booked"}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if talent['available']:
-            if st.button(f"Hire {talent['name']}", key=f"hire_{talent['talent_id']}"):
-                st.session_state.selected_talent = talent
-                st.session_state.current_page = "Hire Talent"
-                st.rerun()
-
-    with col2:
-        if st.button(f"View Profile of {talent['name']}", key=f"profile_{talent['talent_id']}"):
-            st.session_state.selected_talent = talent
-            st.session_state.current_page = "Talent Profile"
-            st.rerun()
-
-# Talent Profile page
-def talent_profile_page():
-    talent = st.session_state.selected_talent
-
-    st.markdown(f"<h1 class='main-header'>{talent['name']}</h1>", unsafe_allow_html=True)
-
-    col1, col2 = st.columns([1, 2])
-
-    with col1:
-        st.image(get_placeholder_image(talent['image'], is_lab=False), caption=talent['name'])
-
-        st.markdown(f"""
-        <div class='card'>
-            <h3>Contact Information</h3>
-            <p>In a real application, contact information would be available after connecting or hiring.</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-        <div class='card'>
-            <p>{talent['bio']}</p>
-            <p><span class='detail-label'>Specialization:</span> {talent['specialization']}</p>
-            <p><span class='detail-label'>Experience:</span> {talent['experience_years']} years</p>
-            <p><span class='detail-label'>Education:</span> {talent['education']}</p>
-            <p><span class='detail-label'>Publications:</span> {talent['publications']}</p>
-            <p><span class='detail-label'>Hourly Rate:</span> ${talent['hourly_rate']}</p>
-            <p><span class='detail-label'>Rating:</span> <span class='rating'>{'★' * int(talent['rating'])} ({talent['rating']})</span></p>
-            <p><span class='detail-label'>Status:</span> {"Available for hire" if talent['available'] else "Currently unavailable"}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<h2 class='sub-header'>Skills & Expertise</h2>", unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h3>Technical Skills</h3>", unsafe_allow_html=False)
-        for skill in talent['skills']:
-            st.markdown(f"- {skill}")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-        <div class='card'>
-            <h3>Research Experience</h3>
-            <p>In a real application, this section would contain detailed information about the talent's
-            research experience, previous employment, and notable projects.</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    if talent['available']:
-        if st.button("Hire This Talent"):
-            st.session_state.current_page = "Hire Talent"
-            st.rerun()
-
-    if st.button("Back to Talents"):
-        st.session_state.current_page = "Find Talents"
-        st.rerun()
-
-
-# Hire Talent page
-def hire_talent_page():
-    talent = st.session_state.selected_talent
-
-    st.markdown(f"<h1 class='main-header'>Hire {talent['name']}</h1>", unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown(f"""
-        <div class='card'>
-            <h3>Talent Details</h3>
-            <p><span class='detail-label'>Name:</span> {talent['name']}</p>
-            <p><span class='detail-label'>Specialization:</span> {talent['specialization']}</p>
-            <p><span class='detail-label'>Experience:</span> {talent['experience_years']} years</p>
-            <p><span class='detail-label'>Hourly Rate:</span> ${talent['hourly_rate']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h3>Skills</h3>", unsafe_allow_html=False)
-        for skill in talent['skills']:
-            st.markdown(f"- {skill}")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h3>Project Details</h3>", unsafe_allow_html=False)
-
-        project_title = st.text_input("Project Title")
-        project_description = st.text_area("Project Description", height=100)
-
-        col1, col2 = st.columns(2)
-        with col1:
-            start_date = st.date_input("Start Date", datetime.datetime.now() + datetime.timedelta(days=7))
-        with col2:
-            end_date = st.date_input("End Date", datetime.datetime.now() + datetime.timedelta(days=37))
-
-        estimated_hours = st.number_input("Estimated Hours", min_value=1, value=40)
-        total_cost = estimated_hours * talent['hourly_rate']
-        st.markdown(f"<p><span class='detail-label'>Total Estimated Cost:</span> ${total_cost:.2f}</p>",
+        st.markdown('<h1 class="gradient-text" style="text-align: center; font-size: 3rem;">UAE Innovate Hub</h1>',
                     unsafe_allow_html=True)
+        st.markdown(
+            '<p style="text-align: center; color: rgba(255,255,255,0.7);">Connect. Innovate. Test. Collaborate.</p>',
+            unsafe_allow_html=True)
 
-        special_requirements = st.text_area("Special Requirements or Skills Needed", height=100)
+        # Lottie анимация
+        lottie_url = "https://assets5.lottiefiles.com/packages/lf20_fcfjwiyb.json"
+        lottie_json = load_lottie_url(lottie_url)
+        if lottie_json:
+            st_lottie(lottie_json, height=200)
 
-        if st.button("Submit Hiring Request"):
-            if not project_title:
-                st.error("Please provide a project title")
-            elif not project_description:
-                st.error("Please provide a project description")
-            elif end_date <= start_date:
-                st.error("End date must be after start date")
-            else:
-                # In a real application, this would be saved to a database and sent to the talent
-                st.success(
-                    "Your hiring request has been submitted. The talent will be notified and can accept or decline the offer.")
-                if st.button("Return to Talents"):
-                    st.session_state.current_page = "Find Talents"
+        tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
+
+        with tab1:
+            with st.form("login_form"):
+                email = st.text_input("Email", placeholder="your@email.com")
+                password = st.text_input("Password", type="password")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    remember_me = st.checkbox("Remember me")
+                with col2:
+                    st.markdown('<a href="#" style="float: right; color: #667eea;">Forgot password?</a>',
+                                unsafe_allow_html=True)
+
+                if st.form_submit_button("Login", use_container_width=True):
+                    user = AuthManager.login(email, password, db)
+                    if user:
+                        st.session_state.user = user
+                        st.success("Welcome back!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid credentials")
+
+        with tab2:
+            with st.form("register_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    name = st.text_input("Full Name")
+                    email = st.text_input("Email")
+                with col2:
+                    password = st.text_input("Password", type="password")
+                    confirm_password = st.text_input("Confirm Password", type="password")
+
+                user_type = st.selectbox("I am a", ["Company", "Talent", "University"])
+                organization = st.text_input("Organization/University")
+
+                terms = st.checkbox("I agree to the Terms of Service and Privacy Policy")
+
+                if st.form_submit_button("Create Account", use_container_width=True):
+                    if password != confirm_password:
+                        st.error("Passwords don't match")
+                    elif not terms:
+                        st.error("Please accept the terms")
+                    else:
+                        success = AuthManager.register(email, password, name,
+                                                       user_type.lower(), organization, db)
+                        if success:
+                            st.success("Account created! Please login.")
+                        else:
+                            st.error("Email already exists")
+
+
+def show_dashboard(db: Database):
+    """Главная страница - дашборд"""
+
+    st.markdown('<h1 class="gradient-text">Welcome to UAE Innovate Hub</h1>', unsafe_allow_html=True)
+
+    # Метрики
+    col1, col2, col3, col4 = st.columns(4)
+
+    cursor = db.conn.cursor()
+
+    with col1:
+        cursor.execute("SELECT COUNT(*) FROM labs")
+        lab_count = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{lab_count}+</div>
+            <div class="metric-label">Testing Labs</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col2:
+        cursor.execute("SELECT COUNT(*) FROM talents")
+        talent_count = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{talent_count}+</div>
+            <div class="metric-label">Talents</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col3:
+        cursor.execute("SELECT COUNT(*) FROM projects WHERE status = 'Active'")
+        project_count = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{project_count}</div>
+            <div class="metric-label">Active Projects</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col4:
+        cursor.execute("SELECT COUNT(*) FROM bookings WHERE status = 'Confirmed'")
+        booking_count = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{booking_count}</div>
+            <div class="metric-label">Bookings</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Графики
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 📊 Booking Trends")
+        # Создаем данные для графика
+        dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
+        bookings = [5 + i // 3 + (i % 7) * 2 for i in range(30)]
+
+        fig = px.line(x=dates, y=bookings,
+                      labels={'x': 'Date', 'y': 'Bookings'},
+                      line_shape='spline')
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color='white',
+            showlegend=False,
+            height=300
+        )
+        fig.update_traces(line_color='#667eea', line_width=3)
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.markdown("### 🏢 Labs by Category")
+        cursor.execute("SELECT specialty, COUNT(*) as count FROM labs GROUP BY specialty")
+        lab_stats = cursor.fetchall()
+
+        if lab_stats:
+            categories = [row['specialty'] for row in lab_stats]
+            counts = [row['count'] for row in lab_stats]
+
+            fig = px.pie(values=counts, names=categories, hole=0.6)
+            fig.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font_color='white',
+                showlegend=True,
+                height=300
+            )
+            fig.update_traces(marker=dict(colors=['#667eea', '#764ba2', '#e73c7e', '#23a6d5']))
+            st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("---")
+
+    # Последние активности
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 🔔 Recent Activities")
+        activities = [
+            ("New lab added", "Khalifa University AI Lab", "2 hours ago", "🏢"),
+            ("Project posted", "Smart City Sensor Development", "5 hours ago", "📋"),
+            ("Talent joined", "Dr. Sarah Ahmed - IoT Expert", "1 day ago", "👤"),
+            ("Booking confirmed", "Drone Testing Zone - 3 days", "2 days ago", "✅"),
+        ]
+
+        for activity in activities:
+            st.markdown(f'''
+            <div class="glass-card" style="padding: 1rem;">
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 1.5rem; margin-right: 1rem;">{activity[3]}</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold;">{activity[0]}</div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">{activity[1]}</div>
+                    </div>
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">{activity[2]}</div>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("### 🌟 Featured Labs")
+        cursor.execute("SELECT * FROM labs ORDER BY rating DESC LIMIT 3")
+        featured_labs = cursor.fetchall()
+
+        for lab in featured_labs:
+            st.markdown(f'''
+            <div class="glass-card" style="padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: bold;">{lab['name']}</div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">{lab['location']}</div>
+                    </div>
+                    <div>{create_rating_stars(lab['rating'])}</div>
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <span class="skill-tag">{lab['specialty']}</span>
+                    <span style="color: #22c55e; margin-left: 1rem;">AED {lab['price_per_day']}/day</span>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+
+def show_labs_page(db: Database):
+    """Страница лабораторий"""
+
+    st.markdown('<h1 class="gradient-text">Testing Laboratories</h1>', unsafe_allow_html=True)
+
+    # Поиск и фильтры
+    col1, col2, col3 = st.columns([3, 1, 1])
+
+    with col1:
+        search_query = st.text_input("🔍 Search labs...", placeholder="Search by name, location, or specialty")
+
+    with col2:
+        sort_by = st.selectbox("Sort by", ["Rating", "Price", "Name", "Availability"])
+
+    with col3:
+        view_mode = st.radio("View", ["Grid", "List"], horizontal=True)
+
+    # Фильтры в сайдбаре
+    with st.sidebar:
+        st.markdown("### 🔧 Filters")
+
+        # Специальности
+        cursor = db.conn.cursor()
+        cursor.execute("SELECT DISTINCT specialty FROM labs")
+        specialties = [row[0] for row in cursor.fetchall()]
+        selected_specialties = st.multiselect("Specialty", specialties)
+
+        # Локации
+        cursor.execute("SELECT DISTINCT location FROM labs")
+        locations = [row[0] for row in cursor.fetchall()]
+        selected_locations = st.multiselect("Location", locations)
+
+        # Ценовой диапазон
+        price_range = st.slider("Price per day (AED)", 0, 5000, (0, 5000))
+
+        # Рейтинг
+        min_rating = st.slider("Minimum rating", 0.0, 5.0, 0.0, 0.5)
+
+        # Доступность
+        availability = st.date_input("Available from", datetime.now())
+
+    # Построение SQL запроса
+    query = "SELECT * FROM labs WHERE 1=1"
+    params = []
+
+    if search_query:
+        query += " AND (name LIKE ? OR description LIKE ? OR equipment LIKE ?)"
+        search_param = f"%{search_query}%"
+        params.extend([search_param, search_param, search_param])
+
+    if selected_specialties:
+        query += f" AND specialty IN ({','.join(['?'] * len(selected_specialties))})"
+        params.extend(selected_specialties)
+
+    if selected_locations:
+        query += f" AND location IN ({','.join(['?'] * len(selected_locations))})"
+        params.extend(selected_locations)
+
+    query += " AND price_per_day BETWEEN ? AND ?"
+    params.extend([price_range[0], price_range[1]])
+
+    query += " AND rating >= ?"
+    params.append(min_rating)
+
+    # Сортировка
+    if sort_by == "Rating":
+        query += " ORDER BY rating DESC"
+    elif sort_by == "Price":
+        query += " ORDER BY price_per_day ASC"
+    elif sort_by == "Name":
+        query += " ORDER BY name ASC"
+    else:
+        query += " ORDER BY available_from ASC"
+
+    cursor.execute(query, params)
+    labs = cursor.fetchall()
+
+    # Отображение результатов
+    st.markdown(f"### Found {len(labs)} labs")
+
+    if view_mode == "Grid":
+        cols = st.columns(3)
+        for idx, lab in enumerate(labs):
+            with cols[idx % 3]:
+                st.markdown(f'''
+                <div class="glass-card">
+                    <h4>{lab['name']}</h4>
+                    <p style="color: rgba(255,255,255,0.7);">{lab['university']}</p>
+                    <p>📍 {lab['location']}</p>
+                    <div style="margin: 1rem 0;">
+                        <span class="skill-tag">{lab['specialty']}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>{create_rating_stars(lab['rating'])}</span>
+                        <span style="color: #22c55e;">AED {lab['price_per_day']}/day</span>
+                    </div>
+                    <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin: 1rem 0;">
+                        {lab['description'][:100]}...
+                    </p>
+                </div>
+                ''', unsafe_allow_html=True)
+
+                if st.button("View Details", key=f"lab_{lab['id']}"):
+                    st.session_state.selected_lab_id = lab['id']
+                    st.rerun()
+    else:
+        # List view
+        for lab in labs:
+            col1, col2, col3 = st.columns([3, 1, 1])
+
+            with col1:
+                st.markdown(f'''
+                <div class="glass-card">
+                    <h4>{lab['name']}</h4>
+                    <p style="color: rgba(255,255,255,0.7);">{lab['university']} • {lab['location']}</p>
+                    <p style="color: rgba(255,255,255,0.6);">{lab['description']}</p>
+                    <div style="margin-top: 0.5rem;">
+                        {' '.join([f'<span class="skill-tag">{eq}</span>' for eq in lab['equipment'].split(',')[:3]])}
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+            with col2:
+                st.markdown(f'''
+                <div style="text-align: center; padding: 1rem;">
+                    <div>{create_rating_stars(lab['rating'])}</div>
+                    <div style="color: #22c55e; font-size: 1.2rem; margin-top: 0.5rem;">
+                        AED {lab['price_per_day']}/day
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+            with col3:
+                if st.button("Book Now", key=f"book_lab_{lab['id']}", use_container_width=True):
+                    st.session_state.booking_lab_id = lab['id']
                     st.rerun()
 
-        st.markdown("</div>", unsafe_allow_html=True)
 
-    if st.button("Cancel"):
-        st.session_state.current_page = "Find Talents"
-        st.rerun()
+def show_talents_page(db: Database):
+    """Страница талантов"""
 
+    st.markdown('<h1 class="gradient-text">Talent Pool</h1>', unsafe_allow_html=True)
 
-# Hire Talents page (job listings)
-def hire_talents_page():
-    st.markdown("<h1 class='main-header'>Post Job Opportunities</h1>", unsafe_allow_html=True)
+    # Статистика талантов
+    col1, col2, col3, col4 = st.columns(4)
+    cursor = db.conn.cursor()
 
-    tab1, tab2 = st.tabs(["Post a New Job", "Your Job Listings"])
+    with col1:
+        cursor.execute("SELECT COUNT(*) FROM talents")
+        total_talents = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{total_talents}</div>
+            <div class="metric-label">Total Talents</div>
+        </div>
+        ''', unsafe_allow_html=True)
 
-    # Post a New Job tab
-    with tab1:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h2>Post a New Job Opportunity</h2>", unsafe_allow_html=False)
+    with col2:
+        cursor.execute("SELECT AVG(rating) FROM talents")
+        avg_rating = cursor.fetchone()[0] or 0
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{avg_rating:.1f}⭐</div>
+            <div class="metric-label">Average Rating</div>
+        </div>
+        ''', unsafe_allow_html=True)
 
-        job_title = st.text_input("Job Title")
-        organization = st.text_input("Organization / Lab Name")
-        location = st.text_input("Location")
+    with col3:
+        cursor.execute("SELECT COUNT(DISTINCT skills) FROM talents")
+        skill_count = 50  # Примерное количество уникальных навыков
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{skill_count}+</div>
+            <div class="metric-label">Skills Covered</div>
+        </div>
+        ''', unsafe_allow_html=True)
 
-        job_type = st.selectbox("Job Type", ["Full-time", "Part-time", "Contract", "Temporary", "Internship"])
+    with col4:
+        cursor.execute("SELECT AVG(hourly_rate) FROM talents")
+        avg_rate = cursor.fetchone()[0] or 0
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{int(avg_rate)} AED</div>
+            <div class="metric-label">Avg. Hourly Rate</div>
+        </div>
+        ''', unsafe_allow_html=True)
 
-        experience_level = st.selectbox("Experience Level",
-                                        ["Entry Level", "Mid Level", "Senior", "Principal", "Executive"])
+    st.markdown("---")
 
-        col1, col2 = st.columns(2)
+    # Поиск и фильтры
+    col1, col2 = st.columns([3, 1])
+
+    with col1:
+        search_query = st.text_input("🔍 Search talents...",
+                                     placeholder="Search by name, skills, title, or expertise")
+
+    with col2:
+        sort_option = st.selectbox("Sort by",
+                                   ["Best Match", "Rating", "Hourly Rate (Low to High)",
+                                    "Hourly Rate (High to Low)", "Experience"])
+
+    # Расширенные фильтры
+    with st.expander("🔧 Advanced Filters", expanded=True):
+        col1, col2, col3, col4 = st.columns(4)
+
         with col1:
-            salary_min = st.number_input("Minimum Salary ($)", min_value=0, value=40000)
+            # Навыки
+            cursor.execute("SELECT DISTINCT skills FROM talents")
+            all_skills = []
+            for row in cursor.fetchall():
+                all_skills.extend([s.strip() for s in row[0].split(',')])
+            unique_skills = sorted(list(set(all_skills)))[:20]  # Топ-20 навыков
+
+            selected_skills = st.multiselect("Skills", unique_skills)
+
         with col2:
-            salary_max = st.number_input("Maximum Salary ($)", min_value=0, value=80000)
+            # Локации
+            cursor.execute("SELECT DISTINCT location FROM talents")
+            locations = [row[0] for row in cursor.fetchall()]
+            selected_locations = st.multiselect("Locations", locations)
 
-        required_skills = st.text_area("Required Skills (comma separated)")
-        job_description = st.text_area("Job Description", height=200)
+        with col3:
+            # Доступность
+            availability_options = ["Full-time", "Part-time", "Contract", "Remote"]
+            selected_availability = st.multiselect("Availability", availability_options)
 
-        application_deadline = st.date_input("Application Deadline",
-                                             datetime.datetime.now() + datetime.timedelta(days=30))
+        with col4:
+            # Ценовой диапазон
+            rate_range = st.slider("Hourly rate (AED)", 0, 500, (0, 500))
 
-        if st.button("Post Job"):
-            if not job_title:
-                st.error("Please provide a job title")
-            elif not organization:
-                st.error("Please provide an organization name")
-            elif not location:
-                st.error("Please provide a location")
-            elif not job_description:
-                st.error("Please provide a job description")
-            elif salary_max <= salary_min:
-                st.error("Maximum salary must be greater than minimum salary")
-            else:
-                # Process skills into a list
-                skills = [skill.strip() for skill in required_skills.split(",") if skill.strip()]
+            # Минимальный рейтинг
+            min_rating = st.slider("Min. rating", 0.0, 5.0, 0.0, 0.5)
 
-                job = {
-                    "job_title": job_title,
-                    "organization": organization,
-                    "location": location,
-                    "job_type": job_type,
-                    "experience_level": experience_level,
-                    "salary_min": salary_min,
-                    "salary_max": salary_max,
-                    "required_skills": skills,
-                    "job_description": job_description,
-                    "application_deadline": application_deadline.strftime("%Y-%m-%d"),
-                    "poster": st.session_state.username
-                }
+    # Построение запроса
+    query = """
+            SELECT t.*, u.name, u.email
+            FROM talents t
+                     JOIN users u ON t.user_id = u.id
+            WHERE 1 = 1 \
+            """
+    params = []
 
-                save_job_listing(job)
-                st.success("Job posted successfully!")
+    if search_query:
+        query += " AND (u.name LIKE ? OR t.title LIKE ? OR t.skills LIKE ? OR t.bio LIKE ?)"
+        search_param = f"%{search_query}%"
+        params.extend([search_param] * 4)
+
+    if selected_skills:
+        skill_conditions = " OR ".join(["t.skills LIKE ?" for _ in selected_skills])
+        query += f" AND ({skill_conditions})"
+        params.extend([f"%{skill}%" for skill in selected_skills])
+
+    if selected_locations:
+        query += f" AND t.location IN ({','.join(['?'] * len(selected_locations))})"
+        params.extend(selected_locations)
+
+    if selected_availability:
+        query += f" AND t.availability IN ({','.join(['?'] * len(selected_availability))})"
+        params.extend(selected_availability)
+
+    query += " AND t.hourly_rate BETWEEN ? AND ?"
+    params.extend([rate_range[0], rate_range[1]])
+
+    query += " AND t.rating >= ?"
+    params.append(min_rating)
+
+    # Сортировка
+    if sort_option == "Rating":
+        query += " ORDER BY t.rating DESC"
+    elif sort_option == "Hourly Rate (Low to High)":
+        query += " ORDER BY t.hourly_rate ASC"
+    elif sort_option == "Hourly Rate (High to Low)":
+        query += " ORDER BY t.hourly_rate DESC"
+    elif sort_option == "Experience":
+        query += " ORDER BY t.experience DESC"
+    else:  # Best Match
+        query += " ORDER BY t.rating DESC, t.hourly_rate ASC"
+
+    cursor.execute(query, params)
+    talents = cursor.fetchall()
+
+    # Отображение результатов
+    st.markdown(f"### Found {len(talents)} talents")
+
+    # Переключатель вида
+    view_mode = st.radio("View as:", ["Cards", "List", "Compact"], horizontal=True)
+
+    if view_mode == "Cards":
+        # Карточки талантов (по 2 в ряд)
+        for i in range(0, len(talents), 2):
+            col1, col2 = st.columns(2)
+
+            for idx, col in enumerate([col1, col2]):
+                if i + idx < len(talents):
+                    talent = talents[i + idx]
+                    with col:
+                        st.markdown(f'''
+                        <div class="glass-card">
+                            <div style="display: flex; align-items: start;">
+                                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea, #764ba2); 
+                                            border-radius: 50%; margin-right: 1rem; flex-shrink: 0;">
+                                    <div style="text-align: center; line-height: 80px; font-size: 2rem; font-weight: bold;">
+                                        {talent['name'][0].upper()}
+                                    </div>
+                                </div>
+                                <div style="flex: 1;">
+                                    <h4>{talent['name']}</h4>
+                                    <p style="color: #667eea; font-weight: 600;">{talent['title']}</p>
+                                    <p>📍 {talent['location']} • {talent['experience']} • {talent['education']}</p>
+                                    <p style="color: rgba(255,255,255,0.7); margin: 0.5rem 0; font-size: 0.9rem;">
+                                        {talent['bio'][:150]}{'...' if len(talent['bio']) > 150 else ''}
+                                    </p>
+                                    <div style="margin: 0.5rem 0;">
+                                        {' '.join([f'<span class="skill-tag">{skill.strip()}</span>'
+                                                   for skill in talent['skills'].split(',')[:5]])}
+                                        {f'<span class="skill-tag">+{len(talent["skills"].split(",")) - 5} more</span>'
+                        if len(talent["skills"].split(",")) > 5 else ''}
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                                        <div>
+                                            {create_rating_stars(talent['rating'])}
+                                            <span style="color: #22c55e; margin-left: 1rem;">AED {talent['hourly_rate']}/hr</span>
+                                        </div>
+                                        <span class="status-badge status-active">{talent['availability']}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        ''', unsafe_allow_html=True)
+
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            if st.button("View Profile", key=f"view_talent_{talent['id']}"):
+                                st.session_state.selected_talent_id = talent['id']
+                                st.rerun()
+                        with col_b:
+                            if st.button("Quick Contact", key=f"contact_talent_{talent['id']}"):
+                                st.session_state.contact_talent_id = talent['id']
+                                st.rerun()
+
+    elif view_mode == "List":
+        # Детальный список
+        for talent in talents:
+            st.markdown(f'''
+            <div class="glass-card">
+                <div style="display: flex; gap: 2rem;">
+                    <div style="flex: 1;">
+                        <h3>{talent['name']} - {talent['title']}</h3>
+                        <p>📍 {talent['location']} • 📚 {talent['education']} • 💼 {talent['experience']} experience</p>
+                        <p style="color: rgba(255,255,255,0.8);">{talent['bio']}</p>
+                        <div style="margin: 1rem 0;">
+                            <strong>Skills:</strong> {talent['skills']}
+                        </div>
+                        {f'<div><strong>Portfolio:</strong> <a href="{talent["portfolio_url"]}" style="color: #667eea;">{talent["portfolio_url"]}</a></div>'
+            if talent.get('portfolio_url') else ''}
+                        {f'<div><strong>LinkedIn:</strong> <a href="{talent["linkedin_url"]}" style="color: #667eea;">{talent["linkedin_url"]}</a></div>'
+            if talent.get('linkedin_url') else ''}
+                    </div>
+                    <div style="text-align: center; min-width: 200px;">
+                        <div>{create_rating_stars(talent['rating'])}</div>
+                        <div style="color: #22c55e; font-size: 1.5rem; margin: 1rem 0;">
+                            AED {talent['hourly_rate']}/hour
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <span class="status-badge status-active">{talent['availability']}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+            col1, col2, col3 = st.columns([1, 1, 3])
+            with col1:
+                if st.button("Full Profile", key=f"full_profile_{talent['id']}"):
+                    st.session_state.selected_talent_id = talent['id']
+                    st.rerun()
+            with col2:
+                if st.button("Contact Now", key=f"contact_now_{talent['id']}"):
+                    st.session_state.contact_talent_id = talent['id']
+                    st.rerun()
+
+    else:  # Compact view
+        # Компактная таблица
+        for talent in talents:
+            col1, col2, col3, col4, col5 = st.columns([3, 2, 1, 1, 1])
+
+            with col1:
+                st.markdown(f"**{talent['name']}**  \n{talent['title']}")
+            with col2:
+                st.markdown(f"{talent['location']} • {talent['availability']}")
+            with col3:
+                st.markdown(create_rating_stars(talent['rating']))
+            with col4:
+                st.markdown(f"**AED {talent['hourly_rate']}/hr**")
+            with col5:
+                if st.button("→", key=f"compact_view_{talent['id']}"):
+                    st.session_state.selected_talent_id = talent['id']
+                    st.rerun()
+
+
+def show_projects_page(db: Database):
+    """Страница проектов"""
+
+    st.markdown('<h1 class="gradient-text">Projects & Collaborations</h1>', unsafe_allow_html=True)
+
+    # Кнопка создания проекта
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        if st.button("➕ Post New Project", use_container_width=True):
+            st.session_state.show_new_project_form = True
+            st.rerun()
+
+    # Табы
+    tab1, tab2, tab3 = st.tabs(["🔥 Active Projects", "⏳ Pending", "✅ Completed"])
+
+    with tab1:
+        show_projects_by_status(db, "Active")
+
+    with tab2:
+        show_projects_by_status(db, "Pending")
+
+    with tab3:
+        show_projects_by_status(db, "Completed")
+
+
+def show_projects_by_status(db: Database, status: str):
+    """Отображение проектов по статусу"""
+
+    cursor = db.conn.cursor()
+    cursor.execute("""
+                   SELECT *, julianday(deadline) - julianday('now') as days_left
+                   FROM projects
+                   WHERE status = ?
+                   ORDER BY posted DESC
+                   """, (status,))
+    projects = cursor.fetchall()
+
+    if not projects:
+        st.info(f"No {status.lower()} projects at the moment.")
+        return
+
+    for project in projects:
+        days_left = int(project['days_left']) if project['days_left'] else 0
+        deadline_color = "#ef4444" if days_left < 7 else "#fbbf24" if days_left < 30 else "#22c55e"
+
+        st.markdown(f'''
+        <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="flex: 1;">
+                    <h3>{project['title']} 
+                        <span class="status-badge status-{status.lower()}">{status}</span>
+                    </h3>
+                    <p style="color: #667eea; font-weight: 600;">{project['organization']}</p>
+                    <p>📍 {project['location']} • 
+                       <span style="color: {deadline_color};">⏰ {days_left} days left</span> • 
+                       👁️ {project['views']} views • 
+                       📝 {project['applications']} applications
+                    </p>
+                    <p style="color: rgba(255,255,255,0.7); margin: 1rem 0;">{project['description']}</p>
+                    <div style="margin: 1rem 0;">
+                        {' '.join([f'<span class="skill-tag">{tag}</span>'
+                                   for tag in project['tags'].split(',')])}
+                    </div>
+                </div>
+                <div style="text-align: right; min-width: 200px;">
+                    <div style="color: #22c55e; font-size: 1.2rem; font-weight: bold;">
+                        AED {project['budget_min']:,} - {project['budget_max']:,}
+                    </div>
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">
+                        Posted {project['posted']}
+                    </div>
+                </div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        col1, col2, col3 = st.columns([1, 1, 4])
+        with col1:
+            if st.button("View Details", key=f"view_project_{project['id']}"):
+                # Увеличиваем счетчик просмотров
+                cursor.execute("UPDATE projects SET views = views + 1 WHERE id = ?",
+                               (project['id'],))
+                db.conn.commit()
+                st.session_state.selected_project_id = project['id']
                 st.rerun()
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # Your Job Listings tab
-    with tab2:
-        job_listings = load_job_listings()
-
-        # Filter to show only this user's job listings
-        user_jobs = [job for job in job_listings if job.get('poster') == st.session_state.username]
-
-        if not user_jobs:
-            st.info("You haven't posted any job listings yet.")
-        else:
-            for job in user_jobs:
-                st.markdown(f"""
-                <div class='card'>
-                    <h3>{job['job_title']}</h3>
-                    <p><span class='detail-label'>Organization:</span> {job['organization']}</p>
-                    <p><span class='detail-label'>Location:</span> {job['location']}</p>
-                    <p><span class='detail-label'>Job Type:</span> {job['job_type']}</p>
-                    <p><span class='detail-label'>Experience Level:</span> {job['experience_level']}</p>
-                    <p><span class='detail-label'>Salary Range:</span> ${job['salary_min']} - ${job['salary_max']}</p>
-                    <p><span class='detail-label'>Posted:</span> {job['date_posted']}</p>
-                    <p><span class='detail-label'>Application Deadline:</span> {job['application_deadline']}</p>
-                    <p><span class='detail-label'>Status:</span> {job['status']}</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # In a real application, there would be options to view applicants, edit, or delete the job listing
-
-
-# Offer Lab Services page
-def offer_lab_services_page():
-    st.markdown("<h1 class='main-header'>Offer Lab Services</h1>", unsafe_allow_html=True)
-
-    tab1, tab2 = st.tabs(["Post a New Service", "Your Service Offerings"])
-
-    # Post a New Service tab
-    with tab1:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h2>Post a New Lab Service</h2>", unsafe_allow_html=False)
-
-        service_title = st.text_input("Service Title")
-        lab_name = st.text_input("Lab / Organization Name")
-        location = st.text_input("Location")
-
-        service_category = st.selectbox("Service Category", [
-            "Analytical Testing", "Material Characterization", "Microbiology Testing",
-            "Genetic Analysis", "Environmental Testing", "Medical Testing",
-            "Food Safety Testing", "Pharmaceutical Testing", "Prototype Development",
-            "R&D Consulting", "Equipment Rental", "Training & Workshops"
-        ])
-
-        service_description = st.text_area("Service Description", height=200)
-
-        col1, col2 = st.columns(2)
-        with col1:
-            pricing_model = st.selectbox("Pricing Model",
-                                         ["Per Sample", "Per Hour", "Per Day", "Per Project", "Custom"])
         with col2:
-            price_range = st.text_input("Price Range", "e.g., $100-200 per sample")
-
-        equipment_used = st.text_area("Equipment / Technology Used")
-        turnaround_time = st.text_input("Typical Turnaround Time", "e.g., 3-5 business days")
-
-        accreditations = st.text_area("Accreditations / Certifications (if any)")
-
-        if st.button("Post Service"):
-            if not service_title:
-                st.error("Please provide a service title")
-            elif not lab_name:
-                st.error("Please provide a lab name")
-            elif not location:
-                st.error("Please provide a location")
-            elif not service_description:
-                st.error("Please provide a service description")
-            else:
-                service = {
-                    "service_title": service_title,
-                    "lab_name": lab_name,
-                    "location": location,
-                    "service_category": service_category,
-                    "service_description": service_description,
-                    "pricing_model": pricing_model,
-                    "price_range": price_range,
-                    "equipment_used": equipment_used,
-                    "turnaround_time": turnaround_time,
-                    "accreditations": accreditations,
-                    "provider": st.session_state.username
-                }
-
-                save_service_offering(service)
-                st.success("Service offering posted successfully!")
+            if status == "Active" and st.button("Apply", key=f"apply_project_{project['id']}"):
+                st.session_state.apply_project_id = project['id']
                 st.rerun()
 
-        st.markdown("</div>", unsafe_allow_html=True)
 
-    # Your Service Offerings tab
+def show_profile_page(db: Database):
+    """Страница профиля пользователя"""
+
+    user = st.session_state.user
+
+    st.markdown(f'<h1 class="gradient-text">My Profile</h1>', unsafe_allow_html=True)
+
+    # Табы профиля
+    tab1, tab2, tab3, tab4 = st.tabs(["👤 Profile", "📅 Bookings", "🔔 Notifications", "⚙️ Settings"])
+
+    with tab1:
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            # Аватар
+            st.markdown('''
+            <div style="text-align: center;">
+                <div style="width: 150px; height: 150px; background: linear-gradient(135deg, #667eea, #764ba2); 
+                            border-radius: 50%; margin: 0 auto;"></div>
+                <h3 style="margin-top: 1rem;">{}</h3>
+                <p style="color: rgba(255,255,255,0.7);">{}</p>
+                <p>{}</p>
+            </div>
+            '''.format(user['name'], user['user_type'].title(), user['organization']),
+                        unsafe_allow_html=True)
+
+        with col2:
+            st.markdown("### Edit Profile")
+
+            with st.form("edit_profile"):
+                name = st.text_input("Name", value=user['name'])
+                organization = st.text_input("Organization", value=user['organization'])
+                bio = st.text_area("Bio", placeholder="Tell us about yourself...")
+
+                if st.form_submit_button("Save Changes"):
+                    cursor = db.conn.cursor()
+                    cursor.execute("""
+                                   UPDATE users
+                                   SET name         = ?,
+                                       organization = ?
+                                   WHERE id = ?
+                                   """, (name, organization, user['id']))
+                    db.conn.commit()
+                    st.success("Profile updated!")
+                    st.session_state.user['name'] = name
+                    st.session_state.user['organization'] = organization
+                    st.rerun()
+
     with tab2:
-        service_offerings = load_service_offerings()
+        st.markdown("### My Bookings")
 
-        # Filter to show only this user's service offerings
-        user_services = [service for service in service_offerings if
-                         service.get('provider') == st.session_state.username]
+        cursor = db.conn.cursor()
+        cursor.execute("""
+                       SELECT b.*, l.name as lab_name, l.location, l.price_per_day
+                       FROM bookings b
+                                JOIN labs l ON b.lab_id = l.id
+                       WHERE b.user_id = ?
+                       ORDER BY b.created_at DESC
+                       """, (user['id'],))
+        bookings = cursor.fetchall()
 
-        if not user_services:
-            st.info("You haven't posted any service offerings yet.")
-        else:
-            for service in user_services:
-                st.markdown(f"""
-                <div class='card'>
-                    <h3>{service['service_title']}</h3>
-                    <p><span class='detail-label'>Lab / Organization:</span> {service['lab_name']}</p>
-                    <p><span class='detail-label'>Location:</span> {service['location']}</p>
-                    <p><span class='detail-label'>Category:</span> {service['service_category']}</p>
-                    <p><span class='detail-label'>Pricing:</span> {service['pricing_model']} - {service['price_range']}</p>
-                    <p><span class='detail-label'>Turnaround Time:</span> {service['turnaround_time']}</p>
-                    <p><span class='detail-label'>Posted:</span> {service['date_posted']}</p>
+        if bookings:
+            for booking in bookings:
+                status_class = {
+                    'Pending': 'status-pending',
+                    'Confirmed': 'status-active',
+                    'Cancelled': 'status-completed'
+                }.get(booking['status'], '')
+
+                st.markdown(f'''
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>
+                            <h4>{booking['lab_name']}</h4>
+                            <p>📍 {booking['location']}</p>
+                            <p>📅 {booking['start_date']} to {booking['end_date']}</p>
+                            <p style="color: rgba(255,255,255,0.7);">{booking['purpose']}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="status-badge {status_class}">{booking['status']}</span>
+                            <p style="color: #22c55e; font-size: 1.2rem; margin-top: 1rem;">
+                                AED {booking['total_cost']:,}
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                """, unsafe_allow_html=True)
+                ''', unsafe_allow_html=True)
+        else:
+            st.info("No bookings yet.")
 
-                # In a real application, there would be options to view inquiries, edit, or delete the service offering
+    with tab3:
+        st.markdown("### Notifications")
 
+        # Получаем уведомления
+        notifications = NotificationManager.get_notifications(user['id'], db)
 
-# Dashboard page
-def dashboard_page():
-    st.markdown("<h1 class='main-header'>My Dashboard</h1>", unsafe_allow_html=True)
-
-    # Display different tabs based on user type
-    if st.session_state.user_type == "Researcher":
-        tab1, tab2, tab3 = st.tabs(["My Lab Bookings", "My Testing Requests", "My Hiring Requests"])
-
-        # My Lab Bookings tab
-        with tab1:
-            bookings = load_bookings_data()
-            user_bookings = [booking for booking in bookings if booking.get('user') == st.session_state.username]
-
-            if not user_bookings:
-                st.info("You don't have any lab bookings yet.")
-            else:
-                for booking in user_bookings:
-                    st.markdown(f"""
-                    <div class='card'>
-                        <h3>{booking['lab_name']}</h3>
-                        <p><span class='detail-label'>Booking Date:</span> {booking['booking_date']}</p>
-                        <p><span class='detail-label'>Time:</span> {booking['start_time']} - {booking['end_time']}</p>
-                        <p><span class='detail-label'>Duration:</span> {booking['duration_hours']:.2f} hours</p>
-                        <p><span class='detail-label'>Total Cost:</span> ${booking['total_cost']:.2f}</p>
-                        <p><span class='detail-label'>Status:</span> {booking['status']}</p>
-                        <p><span class='detail-label'>Purpose:</span> {booking['purpose']}</p>
+        if notifications:
+            for notif in notifications:
+                read_class = "" if notif['is_read'] else "unread"
+                st.markdown(f'''
+                <div class="notification {read_class}">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>
+                            <h4>{notif['title']}</h4>
+                            <p style="color: rgba(255,255,255,0.7);">{notif['message']}</p>
+                        </div>
+                        <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">
+                            {notif['created_at']}
+                        </div>
                     </div>
-                    """, unsafe_allow_html=True)
+                </div>
+                ''', unsafe_allow_html=True)
 
-        # My Testing Requests tab
-        with tab2:
-            st.info("In a real application, this tab would display your testing requests and their statuses.")
+                # Отмечаем как прочитанное
+                if not notif['is_read']:
+                    cursor = db.conn.cursor()
+                    cursor.execute("UPDATE notifications SET is_read = TRUE WHERE id = ?",
+                                   (notif['id'],))
+                    db.conn.commit()
+        else:
+            st.info("No notifications.")
 
-        # My Hiring Requests tab
-        with tab3:
-            st.info("In a real application, this tab would display your talent hiring requests and their statuses.")
+    with tab4:
+        st.markdown("### Account Settings")
 
-    elif st.session_state.user_type == "Lab Owner":
-        tab1, tab2 = st.tabs(["Lab Booking Requests", "Testing Service Requests"])
+        col1, col2 = st.columns(2)
 
-        # Lab Booking Requests tab
-        with tab1:
-            st.info("In a real application, this tab would display booking requests for your labs.")
+        with col1:
+            st.markdown("#### Change Password")
+            with st.form("change_password"):
+                current_password = st.text_input("Current Password", type="password")
+                new_password = st.text_input("New Password", type="password")
+                confirm_password = st.text_input("Confirm New Password", type="password")
 
-        # Testing Service Requests tab
-        with tab2:
-            st.info("In a real application, this tab would display testing service requests for your lab.")
+                if st.form_submit_button("Update Password"):
+                    if new_password != confirm_password:
+                        st.error("Passwords don't match")
+                    else:
+                        # Проверяем текущий пароль
+                        cursor = db.conn.cursor()
+                        cursor.execute("""
+                                       SELECT id
+                                       FROM users
+                                       WHERE id = ?
+                                         AND password_hash = ?
+                                       """, (user['id'], AuthManager.hash_password(current_password)))
 
-    elif st.session_state.user_type == "Lab Talent":
-        tab1, tab2 = st.tabs(["Job Applications", "Hiring Requests"])
+                        if cursor.fetchone():
+                            cursor.execute("""
+                                           UPDATE users
+                                           SET password_hash = ?
+                                           WHERE id = ?
+                                           """, (AuthManager.hash_password(new_password), user['id']))
+                            db.conn.commit()
+                            st.success("Password updated!")
+                        else:
+                            st.error("Current password is incorrect")
 
-        # Job Applications tab
-        with tab1:
-            applications = load_applications()
-            user_applications = [app for app in applications if app.get('applicant') == st.session_state.username]
+        with col2:
+            st.markdown("#### Email Preferences")
 
-            if not user_applications:
-                st.info("You haven't applied to any jobs yet.")
-            else:
-                for app in user_applications:
-                    st.markdown(f"""
-                    <div class='card'>
-                        <h3>{app['job_title']}</h3>
-                        <p><span class='detail-label'>Organization:</span> {app['organization']}</p>
-                        <p><span class='detail-label'>Applied On:</span> {app['date_applied']}</p>
-                        <p><span class='detail-label'>Status:</span> {app['status']}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+            email_bookings = st.checkbox("Email me about booking confirmations", value=True)
+            email_projects = st.checkbox("Email me about new projects", value=True)
+            email_newsletter = st.checkbox("Subscribe to newsletter", value=False)
 
-        # Hiring Requests tab
-        with tab2:
-            st.info("In a real application, this tab would display direct hiring requests for your services.")
+            if st.button("Save Email Preferences"):
+                st.success("Preferences saved!")
+
+        st.markdown("---")
+
+        col1, col2, col3 = st.columns([1, 1, 3])
+        with col1:
+            if st.button("🚪 Logout"):
+                del st.session_state.user
+                st.rerun()
+
+        with col2:
+            if st.button("🗑️ Delete Account", type="secondary"):
+                st.warning("This action cannot be undone!")
 
 
-# Main application
+# ==================== ГЛАВНОЕ ПРИЛОЖЕНИЕ ====================
 def main():
-    apply_custom_css()
+    # Загружаем стили
+    load_css()
 
-    # Check if user is logged in
-    if not st.session_state.logged_in:
-        login_page()
-    else:
-        show_sidebar()
+    # Инициализация БД
+    db = Database()
+    db.seed_data()
 
-        # Display the appropriate page based on the current_page state
-        if st.session_state.current_page == "Home":
-            home_page()
-        elif st.session_state.current_page == "Book Labs":
-            book_labs_page()
-        elif st.session_state.current_page == "Lab Details":
-            lab_details_page()
-        elif st.session_state.current_page == "Lab Booking":
-            lab_booking_page()
-        elif st.session_state.current_page == "Find Testing Labs":
-            find_testing_labs_page()
-        elif st.session_state.current_page == "Testing Lab Details":
-            testing_lab_details_page()
-        elif st.session_state.current_page == "Testing Quote":
-            testing_quote_page()
-        elif st.session_state.current_page == "Find Talents":
-            find_talents_page()
-        elif st.session_state.current_page == "Talent Profile":
-            talent_profile_page()
-        elif st.session_state.current_page == "Hire Talent":
-            hire_talent_page()
-        elif st.session_state.current_page == "Hire Talents":
-            hire_talents_page()
-        elif st.session_state.current_page == "Offer Lab Services":
-            offer_lab_services_page()
-        elif st.session_state.current_page == "Dashboard":
-            dashboard_page()
+    # Проверка аутентификации
+    if 'user' not in st.session_state:
+        show_login_page(db)
+        return
+
+    # Навигация
+    st.markdown('''
+    <div class="nav-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto;">
+            <div style="display: flex; align-items: center; gap: 2rem;">
+                <h2 class="gradient-text" style="margin: 0;">🔬 UAE Innovate Hub</h2>
+                <div style="display: flex; gap: 1rem;">
+    ''', unsafe_allow_html=True)
+
+    # Меню навигации
+    pages = {
+        "Dashboard": "📊",
+        "Labs": "🏢",
+        "Talents": "👥",
+        "Projects": "📋",
+        "DSO Hub": "🌆",
+        "Profile": "👤"
+    }
+
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "Dashboard"
+
+    cols = st.columns(len(pages) + 1)
+
+    for idx, (page, icon) in enumerate(pages.items()):
+        with cols[idx]:
+            if st.button(f"{icon} {page}", key=f"nav_{page}", use_container_width=True):
+                st.session_state.current_page = page
+                st.rerun()
+
+    # Уведомления
+    with cols[-1]:
+        unread_count = NotificationManager.get_unread_count(st.session_state.user['id'], db)
+        notif_label = f"🔔 ({unread_count})" if unread_count > 0 else "🔔"
+        if st.button(notif_label, key="notifications"):
+            st.session_state.current_page = "Profile"
+            st.rerun()
+
+    st.markdown('''
+                </div>
+            </div>
+            <div style="color: rgba(255,255,255,0.7);">
+                Welcome, {} 👋
+            </div>
+        </div>
+    </div>
+    '''.format(st.session_state.user['name']), unsafe_allow_html=True)
+
+    # Отображение выбранной страницы
+    if st.session_state.current_page == "Dashboard":
+        show_dashboard(db)
+    elif st.session_state.current_page == "Labs":
+        show_labs_page(db)
+    elif st.session_state.current_page == "Talents":
+        show_talents_page(db)
+    elif st.session_state.current_page == "Projects":
+        show_projects_page(db)
+    elif st.session_state.current_page == "Profile":
+        show_profile_page(db)
+    # DSO Hub можно добавить аналогично
 
 
 if __name__ == "__main__":
