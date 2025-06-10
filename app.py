@@ -9,16 +9,28 @@ from dataclasses import dataclass
 from typing import List, Optional, Dict
 import plotly.express as px
 import plotly.graph_objects as go
-import requests
 from streamlit_lottie import st_lottie
+import requests
 
 # ==================== КОНФИГУРАЦИЯ ====================
 st.set_page_config(
-    page_title="UAE Innovate Hub",
+    page_title="UAE Innovate Hub | by Alisher Beisembekov",
     page_icon="🔬",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
+    menu_items={
+        'About': "# UAE Innovate Hub\n\nDeveloped by **Alisher Beisembekov**\n\nA platform connecting UAE's innovation ecosystem.",
+        'Report a bug': "https://github.com/alisherbeisembekov/uae-innovate-hub/issues",
+    }
 )
+
+# ==================== ИНФОРМАЦИЯ ОБ АВТОРЕ ====================
+__author__ = "Alisher Beisembekov"
+__version__ = "1.0.0"
+__email__ = "alisher.beisembekov@example.com"  # Замени на свой email
+__copyright__ = "Copyright 2024, Alisher Beisembekov"
+__linkedin__ = "https://linkedin.com/in/alisherbeisembekov"  # Замени на свой LinkedIn
+__github__ = "https://github.com/alisherbeisembekov"  # Замени на свой GitHub
 
 # ==================== БАЗА ДАННЫХ ====================
 class Database:
@@ -833,16 +845,12 @@ def load_css():
     """, unsafe_allow_html=True)
 
 # ==================== УТИЛИТЫ ====================
-@st.cache_data
-def load_lottie_url(url: str):
-    """Загрузка Lottie анимации"""
+def st_rerun():
+    """Совместимость с разными версиями Streamlit"""
     try:
-        r = requests.get(url)
-        if r.status_code != 200:
-            return None
-        return r.json()
-    except:
-        return None
+        st.rerun()
+    except AttributeError:
+        st.experimental_rerun()
 
 def create_rating_stars(rating: float) -> str:
     """Создание HTML для звезд рейтинга"""
@@ -937,12 +945,17 @@ def show_login_page(db: Database):
                    unsafe_allow_html=True)
         st.markdown('<p style="text-align: center; color: rgba(255,255,255,0.7);">Connect. Innovate. Test. Collaborate.</p>', 
                    unsafe_allow_html=True)
-
-        # Lottie анимация
-        lottie_url = "https://assets5.lottiefiles.com/packages/lf20_fcfjwiyb.json"
-        lottie_json = load_lottie_url(lottie_url)
-        if lottie_json:
-            st_lottie(lottie_json, height=200)
+        
+        # Добавим простую анимацию вместо Lottie
+        st.markdown('''
+        <div style="text-align: center; margin: 2rem 0;">
+            <div class="loading-dots">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+        '''.format(__version__, __author__, __email__, __linkedin__, __github__), unsafe_allow_html=True)
         
         tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
         
@@ -963,7 +976,7 @@ def show_login_page(db: Database):
                     if user:
                         st.session_state.user = user
                         st.success("Welcome back!")
-                        st.experimental_rerun()
+                        st_rerun()
                     else:
                         st.error("Invalid credentials")
         
@@ -994,6 +1007,15 @@ def show_login_page(db: Database):
                             st.success("Account created! Please login.")
                         else:
                             st.error("Email already exists")
+        
+        # Авторство в футере страницы логина
+        st.markdown("---")
+        st.markdown('''
+        <div style="text-align: center; color: rgba(255,255,255,0.4); margin-top: 3rem;">
+            <p>Developed with ❤️ by <strong>Alisher Beisembekov</strong></p>
+            <p style="font-size: 0.8rem;">UAE Innovate Hub © 2024</p>
+        </div>
+        ''', unsafe_allow_html=True)
 
 def show_dashboard(db: Database):
     """Главная страница - дашборд"""
@@ -1117,6 +1139,15 @@ def show_dashboard(db: Database):
             </div>
             ''', unsafe_allow_html=True)
     
+    # Футер с авторством
+    st.markdown("---")
+    st.markdown('''
+    <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem 0;">
+        <p>UAE Innovate Hub © 2024 | Developed by <strong>Alisher Beisembekov</strong></p>
+        <p style="font-size: 0.9rem;">Connecting UAE's innovation ecosystem</p>
+    </div>
+    ''', unsafe_allow_html=True)
+    
     with col2:
         st.markdown("### 🌟 Featured Labs")
         cursor.execute("SELECT * FROM labs ORDER BY rating DESC LIMIT 3")
@@ -1179,6 +1210,14 @@ def show_labs_page(db: Database):
         
         # Доступность
         availability = st.date_input("Available from", datetime.now())
+        
+        # Информация об авторе в сайдбаре
+        st.markdown("---")
+        st.markdown('''
+        <div style="text-align: center; color: rgba(255,255,255,0.5); font-size: 0.8rem;">
+            <p>Developed by<br><strong>Alisher Beisembekov</strong></p>
+        </div>
+        ''', unsafe_allow_html=True)
     
     # Построение SQL запроса
     query = "SELECT * FROM labs WHERE 1=1"
@@ -1243,7 +1282,7 @@ def show_labs_page(db: Database):
                 
                 if st.button("View Details", key=f"lab_{lab['id']}"):
                     st.session_state.selected_lab_id = lab['id']
-                    st.experimental_rerun()
+                    st_rerun()
     else:
         # List view
         for lab in labs:
@@ -1274,7 +1313,7 @@ def show_labs_page(db: Database):
             with col3:
                 if st.button("Book Now", key=f"book_lab_{lab['id']}", use_container_width=True):
                     st.session_state.booking_lab_id = lab['id']
-                    st.experimental_rerun()
+                    st_rerun()
 
 def show_talents_page(db: Database):
     """Страница талантов"""
@@ -1803,6 +1842,25 @@ def show_profile_page(db: Database):
         with col2:
             if st.button("🗑️ Delete Account", type="secondary"):
                 st.warning("This action cannot be undone!")
+        
+        # О платформе
+        st.markdown("---")
+        st.markdown('''
+        <div class="glass-card">
+            <h4>📱 About UAE Innovate Hub</h4>
+            <p style="color: rgba(255,255,255,0.7);">
+                UAE Innovate Hub is a comprehensive platform connecting companies, universities, and talented individuals 
+                to accelerate innovation and research in the UAE.
+            </p>
+            <div style="margin-top: 1rem;">
+                <p><strong>Version:</strong> {0}</p>
+                <p><strong>Developer:</strong> {1}</p>
+                <p><strong>Contact:</strong> <a href="mailto:{2}" style="color: #667eea;">{2}</a></p>
+                <p><strong>LinkedIn:</strong> <a href="{3}" style="color: #667eea;">Alisher Beisembekov</a></p>
+                <p><strong>GitHub:</strong> <a href="{4}" style="color: #667eea;">@alisherbeisembekov</a></p>
+            </div>'''.format(__version__, __author__, __email__, __linkedin__, __github__), unsafe_allow_html=True)
+        </div>
+        ''', unsafe_allow_html=True)
 
 # ==================== ГЛАВНОЕ ПРИЛОЖЕНИЕ ====================
 def main():
