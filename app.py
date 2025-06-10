@@ -1881,7 +1881,7 @@ def main():
     <div class="nav-container">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto;">
             <div style="display: flex; align-items: center; gap: 2rem;">
-                <h2 class="gradient-text" style="margin: 0;">🔬 UAE Innovate Hub</h2>
+                <h2 class="gradient-text" style="margin: 0;"> UAE Innovate Hub</h2>
                 <div style="display: flex; gap: 1rem;">
     ''', unsafe_allow_html=True)
     
