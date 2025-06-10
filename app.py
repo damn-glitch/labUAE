@@ -945,17 +945,12 @@ def show_login_page(db: Database):
                    unsafe_allow_html=True)
         st.markdown('<p style="text-align: center; color: rgba(255,255,255,0.7);">Connect. Innovate. Test. Collaborate.</p>', 
                    unsafe_allow_html=True)
-        
-        # Добавим простую анимацию вместо Lottie
-        st.markdown('''
-        <div style="text-align: center; margin: 2rem 0;">
-            <div class="loading-dots">
-                <div></div>
-                <div></div>
-                <div></div>
-            </div>
-        </div>
-        '''.format(__version__, __author__, __email__, __linkedin__, __github__), unsafe_allow_html=True)
+
+        # Lottie анимация
+        lottie_url = "https://assets5.lottiefiles.com/packages/lf20_fcfjwiyb.json"
+        lottie_json = load_lottie_url(lottie_url)
+        if lottie_json:
+            st_lottie(lottie_json, height=200)
         
         tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
         
@@ -1013,7 +1008,7 @@ def show_login_page(db: Database):
         st.markdown('''
         <div style="text-align: center; color: rgba(255,255,255,0.4); margin-top: 3rem;">
             <p>Developed with ❤️ by <strong>Alisher Beisembekov</strong></p>
-            <p style="font-size: 0.8rem;">UAE Innovate Hub © 2024</p>
+            <p style="font-size: 0.8rem;">UAE Innovate Hub © 2025</p>
         </div>
         ''', unsafe_allow_html=True)
 
