@@ -27,10 +27,10 @@ st.set_page_config(
 # ==================== ИНФОРМАЦИЯ ОБ АВТОРЕ ====================
 __author__ = "Alisher Beisembekov"
 __version__ = "1.0.0"
-__email__ = "alisher.beisembekov@example.com"  # Замени на свой email
-__copyright__ = "Copyright 2024, Alisher Beisembekov"
-__linkedin__ = "https://linkedin.com/in/alisherbeisembekov"  # Замени на свой LinkedIn
-__github__ = "https://github.com/alisherbeisembekov"  # Замени на свой GitHub
+__email__ = "alisherbeisembekov2002@gmail.com"  # Замени на свой email
+__copyright__ = "Copyright 2025, Alisher Beisembekov"
+__linkedin__ = "https://linkedin.com/in/alisher-beisembekov"  # Замени на свой LinkedIn
+__github__ = "https://github.com/damn_glitch"  # Замени на свой GitHub
 
 # ==================== БАЗА ДАННЫХ ====================
 class Database:
