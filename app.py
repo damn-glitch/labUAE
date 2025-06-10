@@ -851,6 +851,16 @@ def st_rerun():
         st.rerun()
     except AttributeError:
         st.experimental_rerun()
+@st.cache_data
+def load_lottie_url(url: str):
+    """Загрузка Lottie анимации"""
+    try:
+        r = requests.get(url)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except:
+        return None
 
 def create_rating_stars(rating: float) -> str:
     """Создание HTML для звезд рейтинга"""
