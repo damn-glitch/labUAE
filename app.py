@@ -10,6 +10,7 @@ from typing import List, Optional, Dict
 import plotly.express as px
 import plotly.graph_objects as go
 import requests
+from streamlit_lottie import st_lottie
 
 # ==================== КОНФИГУРАЦИЯ ====================
 st.set_page_config(
