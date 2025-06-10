@@ -936,6 +936,12 @@ def show_login_page(db: Database):
                    unsafe_allow_html=True)
         st.markdown('<p style="text-align: center; color: rgba(255,255,255,0.7);">Connect. Innovate. Test. Collaborate.</p>', 
                    unsafe_allow_html=True)
+
+        # Lottie анимация
+        lottie_url = "https://assets5.lottiefiles.com/packages/lf20_fcfjwiyb.json"
+        lottie_json = load_lottie_url(lottie_url)
+        if lottie_json:
+            st_lottie(lottie_json, height=200)
         
         tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
         
