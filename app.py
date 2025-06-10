@@ -1179,7 +1179,7 @@ def show_login_page(db: Database):
                     if user:
                         st.session_state.user = user
                         st.success("Welcome back!")
-                        st.rerun
+                        st.rerun()
                     else:
                         st.error("Invalid credentials")
 
@@ -1461,7 +1461,7 @@ def show_labs_page(db: Database):
 
                 if st.button("View Details", key=f"lab_{lab['id']}"):
                     st.session_state.selected_lab_id = lab['id']
-                    st.rerun
+                    st.rerun()
     else:
         # List view
         for lab in labs:
@@ -1492,7 +1492,7 @@ def show_labs_page(db: Database):
             with col3:
                 if st.button("Book Now", key=f"book_lab_{lab['id']}", use_container_width=True):
                     st.session_state.booking_lab_id = lab['id']
-                    st.rerun
+                    st.rerun()
 
 
 def show_talents_page(db: Database):
@@ -1691,11 +1691,11 @@ def show_talents_page(db: Database):
                         with col_a:
                             if st.button("View Profile", key=f"view_talent_{talent['id']}"):
                                 st.session_state.selected_talent_id = talent['id']
-                                st.rerun
+                                st.rerun()
                         with col_b:
                             if st.button("Quick Contact", key=f"contact_talent_{talent['id']}"):
                                 st.session_state.contact_talent_id = talent['id']
-                                st.rerun
+                                st.rerun()
 
     elif view_mode == "List":
         # Детальный список
@@ -1732,11 +1732,11 @@ def show_talents_page(db: Database):
             with col1:
                 if st.button("Full Profile", key=f"full_profile_{talent['id']}"):
                     st.session_state.selected_talent_id = talent['id']
-                    st.rerun
+                    st.rerun()
             with col2:
                 if st.button("Contact Now", key=f"contact_now_{talent['id']}"):
                     st.session_state.contact_talent_id = talent['id']
-                    st.rerun
+                    st.rerun()
 
     else:  # Compact view
         # Компактная таблица
@@ -1754,7 +1754,7 @@ def show_talents_page(db: Database):
             with col5:
                 if st.button("→", key=f"compact_view_{talent['id']}"):
                     st.session_state.selected_talent_id = talent['id']
-                    st.rerun
+                    st.rerun()
 
 
 def show_projects_page(db: Database):
@@ -1767,7 +1767,7 @@ def show_projects_page(db: Database):
     with col2:
         if st.button("➕ Post New Project", use_container_width=True):
             st.session_state.show_new_project_form = True
-            st.rerun
+            st.rerun()
 
     # Табы
     tab1, tab2, tab3 = st.tabs(["🔥 Active Projects", "⏳ Pending", "✅ Completed"])
@@ -1841,12 +1841,12 @@ def show_projects_by_status(db: Database, status: str):
                                (project['id'],))
                 db.conn.commit()
                 st.session_state.selected_project_id = project['id']
-                st.rerun
+                st.rerun()
 
         with col2:
             if status == "Active" and st.button("Apply", key=f"apply_project_{project['id']}"):
                 st.session_state.apply_project_id = project['id']
-                st.rerun
+                st.rerun()
 
 
 def show_profile_page(db: Database):
@@ -1895,7 +1895,7 @@ def show_profile_page(db: Database):
                     st.success("Profile updated!")
                     st.session_state.user['name'] = name
                     st.session_state.user['organization'] = organization
-                    st.rerun
+                    st.rerun()
 
     with tab2:
         st.markdown("### My Bookings")
@@ -2023,7 +2023,7 @@ def show_profile_page(db: Database):
         with col1:
             if st.button("🚪 Logout"):
                 del st.session_state.user
-                st.rerun
+                st.rerun()
 
         with col2:
             if st.button("🗑️ Delete Account", type="secondary"):
@@ -2072,7 +2072,7 @@ def main():
         with cols[idx]:
             if st.button(f"{icon} {page}", key=f"nav_{page}", use_container_width=True):
                 st.session_state.current_page = page
-                st.rerun
+                st.rerun()
 
     # Уведомления
     with cols[-1]:
@@ -2080,7 +2080,7 @@ def main():
         notif_label = f"🔔 ({unread_count})" if unread_count > 0 else "🔔"
         if st.button(notif_label, key="notifications"):
             st.session_state.current_page = "Profile"
-            st.rerun
+            st.rerun()
 
     st.markdown('''
                 </div>
