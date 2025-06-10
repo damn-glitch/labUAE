@@ -1859,8 +1859,7 @@ def show_profile_page(db: Database):
                 <p><strong>LinkedIn:</strong> <a href="{3}" style="color: #667eea;">Alisher Beisembekov</a></p>
                 <p><strong>GitHub:</strong> <a href="{4}" style="color: #667eea;">@alisherbeisembekov</a></p>
             </div>'''.format(__version__, __author__, __email__, __linkedin__, __github__), unsafe_allow_html=True)
-        </div>
-        ''', unsafe_allow_html=True)
+     
 
 # ==================== ГЛАВНОЕ ПРИЛОЖЕНИЕ ====================
 def main():
