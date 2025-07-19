@@ -9,2126 +9,4715 @@ from dataclasses import dataclass
 from typing import List, Optional, Dict
 import plotly.express as px
 import plotly.graph_objects as go
-from streamlit_lottie import st_lottie
-import requests
+import secrets
+import string
 
-# ==================== КОНФИГУРАЦИЯ ====================
+# ==================== CONFIG ====================
 st.set_page_config(
-    page_title="UAE Innovate Hub | by Alisher Beisembekov",
+    page_title="KIC Innovation Hub",
     page_icon="🔬",
     layout="wide",
-    initial_sidebar_state="collapsed",
-    menu_items={
-        'About': "# UAE Innovate Hub\n\nDeveloped by **Alisher Beisembekov**\n\nA platform connecting UAE's innovation ecosystem.",
-        'Report a bug': "https://github.com/alisherbeisembekov/uae-innovate-hub/issues",
-    }
+    initial_sidebar_state="collapsed"
 )
 
-# ==================== ИНФОРМАЦИЯ ОБ АВТОРЕ ====================
+# ==================== INFO OF AUTHOR ====================
 __author__ = "Alisher Beisembekov"
 __version__ = "1.0.0"
-__email__ = "alisherbeisembekov2002@gmail.com"  # Замени на свой email
+__email__ = "alisherbeisembekov2002@gmail.com"
 __copyright__ = "Copyright 2025, Alisher Beisembekov"
-__linkedin__ = "https://linkedin.com/in/alisher-beisembekov"  # Замени на свой LinkedIn
-__github__ = "https://github.com/damn_glitch"  # Замени на свой GitHub
+__linkedin__ = "https://linkedin.com/in/alisher-beisembekov"
+__github__ = "https://github.com/damn_glitch"
 
-# ==================== БАЗА ДАННЫХ ====================
+# ==================== DATABASE ====================
 class Database:
-    def __init__(self, db_path="innovate_hub.db"):
+    def __init__(self, db_path="innovate_hub_ultimate.db"):
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.create_tables()
-        
+
     def create_tables(self):
-        """Создание таблиц в БД"""
+        """Enhanced database schema with all features"""
         cursor = self.conn.cursor()
-        
-        # Таблица пользователей
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            name TEXT NOT NULL,
-            user_type TEXT NOT NULL,
-            organization TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
-        
-        # Таблица лабораторий
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS labs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            university TEXT NOT NULL,
-            location TEXT NOT NULL,
-            specialty TEXT NOT NULL,
-            available_from DATE,
-            equipment TEXT,
-            description TEXT,
-            contact TEXT,
-            price_per_day INTEGER,
-            rating REAL DEFAULT 0,
-            image_url TEXT,
-            capacity INTEGER,
-            amenities TEXT
-        )''')
-        
-        # Таблица талантов
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS talents (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            title TEXT NOT NULL,
-            location TEXT NOT NULL,
-            experience TEXT,
-            education TEXT,
-            skills TEXT,
-            availability TEXT,
-            bio TEXT,
-            hourly_rate INTEGER,
-            portfolio_url TEXT,
-            linkedin_url TEXT,
-            rating REAL DEFAULT 0,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )''')
-        
-        # Таблица проектов
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS projects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            organization TEXT NOT NULL,
-            location TEXT NOT NULL,
-            deadline DATE,
-            posted DATE DEFAULT CURRENT_DATE,
-            description TEXT,
-            requirements TEXT,
-            tags TEXT,
-            budget_min INTEGER,
-            budget_max INTEGER,
-            status TEXT DEFAULT 'Active',
-            contact TEXT,
-            views INTEGER DEFAULT 0,
-            applications INTEGER DEFAULT 0
-        )''')
-        
-        # Таблица бронирований
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS bookings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            lab_id INTEGER,
-            start_date DATE,
-            end_date DATE,
-            purpose TEXT,
-            status TEXT DEFAULT 'Pending',
-            total_cost INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (lab_id) REFERENCES labs (id)
-        )''')
-        
-        # Таблица отзывов
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS reviews (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            item_type TEXT,
-            item_id INTEGER,
-            rating INTEGER,
-            comment TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )''')
-        
-        # Таблица уведомлений
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            title TEXT,
-            message TEXT,
-            type TEXT,
-            is_read BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )''')
-        
-        self.conn.commit()
-        
-    def seed_data(self):
-        """Заполнение БД начальными данными"""
+
+        try:
+            # Enhanced users table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS users
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               email
+                               TEXT
+                               UNIQUE
+                               NOT
+                               NULL,
+                               password_hash
+                               TEXT
+                               NOT
+                               NULL,
+                               name
+                               TEXT
+                               NOT
+                               NULL,
+                               user_type
+                               TEXT
+                               NOT
+                               NULL,
+                               organization
+                               TEXT,
+                               bio
+                               TEXT,
+                               location
+                               TEXT,
+                               profile_image
+                               TEXT,
+                               phone
+                               TEXT,
+                               linkedin_url
+                               TEXT,
+                               website_url
+                               TEXT,
+                               kic_balance
+                               INTEGER
+                               DEFAULT
+                               1000,
+                               total_projects_completed
+                               INTEGER
+                               DEFAULT
+                               0,
+                               reputation_score
+                               INTEGER
+                               DEFAULT
+                               0,
+                               is_verified
+                               BOOLEAN
+                               DEFAULT
+                               FALSE,
+                               is_active
+                               BOOLEAN
+                               DEFAULT
+                               TRUE,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP
+                           )''')
+
+            # Universities table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS universities
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               name
+                               TEXT
+                               NOT
+                               NULL,
+                               location
+                               TEXT
+                               NOT
+                               NULL,
+                               country
+                               TEXT
+                               DEFAULT
+                               'UAE',
+                               website
+                               TEXT,
+                               contact_email
+                               TEXT,
+                               contact_phone
+                               TEXT,
+                               description
+                               TEXT,
+                               established_year
+                               INTEGER,
+                               total_students
+                               INTEGER
+                               DEFAULT
+                               0,
+                               total_faculty
+                               INTEGER
+                               DEFAULT
+                               0,
+                               ranking_national
+                               INTEGER,
+                               is_verified
+                               BOOLEAN
+                               DEFAULT
+                               FALSE,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP
+                           )''')
+
+            # Companies table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS companies
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               name
+                               TEXT
+                               NOT
+                               NULL,
+                               description
+                               TEXT,
+                               industry
+                               TEXT,
+                               size
+                               TEXT,
+                               location
+                               TEXT,
+                               website
+                               TEXT,
+                               logo_url
+                               TEXT,
+                               founded_year
+                               INTEGER,
+                               kic_balance
+                               INTEGER
+                               DEFAULT
+                               5000,
+                               total_projects_posted
+                               INTEGER
+                               DEFAULT
+                               0,
+                               rating
+                               REAL
+                               DEFAULT
+                               0,
+                               is_verified
+                               BOOLEAN
+                               DEFAULT
+                               FALSE,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP
+                           )''')
+
+            # Enhanced labs table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS labs
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               name
+                               TEXT
+                               NOT
+                               NULL,
+                               university_id
+                               INTEGER,
+                               location
+                               TEXT
+                               NOT
+                               NULL,
+                               specialty
+                               TEXT
+                               NOT
+                               NULL,
+                               available_from
+                               DATE,
+                               equipment
+                               TEXT,
+                               description
+                               TEXT,
+                               contact
+                               TEXT,
+                               price_per_day
+                               INTEGER,
+                               kic_price_per_day
+                               INTEGER,
+                               rating
+                               REAL
+                               DEFAULT
+                               0,
+                               image_url
+                               TEXT,
+                               capacity
+                               INTEGER,
+                               amenities
+                               TEXT,
+                               total_bookings
+                               INTEGER
+                               DEFAULT
+                               0,
+                               is_featured
+                               BOOLEAN
+                               DEFAULT
+                               FALSE,
+                               access_requirements
+                               TEXT,
+                               safety_protocols
+                               TEXT,
+                               FOREIGN
+                               KEY
+                           (
+                               university_id
+                           ) REFERENCES universities
+                           (
+                               id
+                           )
+                               )''')
+
+            # Lab access credentials table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS lab_access
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               lab_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               user_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               access_level
+                               TEXT
+                               DEFAULT
+                               'basic',
+                               username
+                               TEXT
+                               NOT
+                               NULL,
+                               password_hash
+                               TEXT
+                               NOT
+                               NULL,
+                               valid_from
+                               DATE,
+                               valid_until
+                               DATE,
+                               is_active
+                               BOOLEAN
+                               DEFAULT
+                               TRUE,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               FOREIGN
+                               KEY
+                           (
+                               lab_id
+                           ) REFERENCES labs
+                           (
+                               id
+                           ),
+                               FOREIGN KEY
+                           (
+                               user_id
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            # Enhanced talents table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS talents
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               user_id
+                               INTEGER,
+                               title
+                               TEXT
+                               NOT
+                               NULL,
+                               location
+                               TEXT
+                               NOT
+                               NULL,
+                               experience
+                               TEXT,
+                               education
+                               TEXT,
+                               skills
+                               TEXT,
+                               availability
+                               TEXT,
+                               bio
+                               TEXT,
+                               hourly_rate
+                               INTEGER,
+                               kic_hourly_rate
+                               INTEGER,
+                               portfolio_url
+                               TEXT,
+                               linkedin_url
+                               TEXT,
+                               rating
+                               REAL
+                               DEFAULT
+                               0,
+                               total_projects
+                               INTEGER
+                               DEFAULT
+                               0,
+                               total_earnings
+                               INTEGER
+                               DEFAULT
+                               0,
+                               specializations
+                               TEXT,
+                               certifications
+                               TEXT,
+                               languages
+                               TEXT,
+                               is_featured
+                               BOOLEAN
+                               DEFAULT
+                               FALSE,
+                               FOREIGN
+                               KEY
+                           (
+                               user_id
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            # Enhanced projects table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS projects
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               title
+                               TEXT
+                               NOT
+                               NULL,
+                               organization
+                               TEXT
+                               NOT
+                               NULL,
+                               company_id
+                               INTEGER,
+                               location
+                               TEXT
+                               NOT
+                               NULL,
+                               deadline
+                               DATE,
+                               posted
+                               DATE
+                               DEFAULT
+                               CURRENT_DATE,
+                               description
+                               TEXT,
+                               requirements
+                               TEXT,
+                               tags
+                               TEXT,
+                               budget_min
+                               INTEGER,
+                               budget_max
+                               INTEGER,
+                               kic_budget_min
+                               INTEGER,
+                               kic_budget_max
+                               INTEGER,
+                               status
+                               TEXT
+                               DEFAULT
+                               'Active',
+                               contact
+                               TEXT,
+                               views
+                               INTEGER
+                               DEFAULT
+                               0,
+                               applications
+                               INTEGER
+                               DEFAULT
+                               0,
+                               project_type
+                               TEXT
+                               DEFAULT
+                               'Research',
+                               urgency
+                               TEXT
+                               DEFAULT
+                               'Medium',
+                               remote_possible
+                               BOOLEAN
+                               DEFAULT
+                               FALSE,
+                               created_by
+                               INTEGER,
+                               FOREIGN
+                               KEY
+                           (
+                               company_id
+                           ) REFERENCES companies
+                           (
+                               id
+                           ),
+                               FOREIGN KEY
+                           (
+                               created_by
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            # User projects table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS user_projects
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               user_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               project_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               role
+                               TEXT
+                               DEFAULT
+                               'participant',
+                               status
+                               TEXT
+                               DEFAULT
+                               'active',
+                               joined_date
+                               DATE
+                               DEFAULT
+                               CURRENT_DATE,
+                               completion_date
+                               DATE,
+                               contribution_description
+                               TEXT,
+                               rating_received
+                               REAL,
+                               payment_received
+                               INTEGER,
+                               FOREIGN
+                               KEY
+                           (
+                               user_id
+                           ) REFERENCES users
+                           (
+                               id
+                           ),
+                               FOREIGN KEY
+                           (
+                               project_id
+                           ) REFERENCES projects
+                           (
+                               id
+                           )
+                               )''')
+
+            # Project applications table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS project_applications
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               project_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               user_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               application_text
+                               TEXT,
+                               proposed_rate
+                               INTEGER,
+                               proposed_kic_rate
+                               INTEGER,
+                               status
+                               TEXT
+                               DEFAULT
+                               'pending',
+                               applied_date
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               response_date
+                               TIMESTAMP,
+                               response_message
+                               TEXT,
+                               FOREIGN
+                               KEY
+                           (
+                               project_id
+                           ) REFERENCES projects
+                           (
+                               id
+                           ),
+                               FOREIGN KEY
+                           (
+                               user_id
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            # Messages table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS messages
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               sender_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               receiver_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               message
+                               TEXT
+                               NOT
+                               NULL,
+                               message_type
+                               TEXT
+                               DEFAULT
+                               'text',
+                               is_read
+                               BOOLEAN
+                               DEFAULT
+                               FALSE,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               FOREIGN
+                               KEY
+                           (
+                               sender_id
+                           ) REFERENCES users
+                           (
+                               id
+                           ),
+                               FOREIGN KEY
+                           (
+                               receiver_id
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            # Connections table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS connections
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               requester_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               addressee_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               status
+                               TEXT
+                               DEFAULT
+                               'pending',
+                               message
+                               TEXT,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               accepted_at
+                               TIMESTAMP,
+                               FOREIGN
+                               KEY
+                           (
+                               requester_id
+                           ) REFERENCES users
+                           (
+                               id
+                           ),
+                               FOREIGN KEY
+                           (
+                               addressee_id
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            # Activities table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS activities
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               user_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               activity_type
+                               TEXT
+                               NOT
+                               NULL,
+                               title
+                               TEXT
+                               NOT
+                               NULL,
+                               description
+                               TEXT,
+                               related_id
+                               INTEGER,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               FOREIGN
+                               KEY
+                           (
+                               user_id
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            # KIC transactions table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS kic_transactions
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               user_id
+                               INTEGER
+                               NOT
+                               NULL,
+                               transaction_type
+                               TEXT
+                               NOT
+                               NULL,
+                               amount
+                               INTEGER
+                               NOT
+                               NULL,
+                               description
+                               TEXT,
+                               related_id
+                               INTEGER,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               FOREIGN
+                               KEY
+                           (
+                               user_id
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            # Bookings table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS bookings
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               user_id
+                               INTEGER,
+                               lab_id
+                               INTEGER,
+                               start_date
+                               DATE,
+                               end_date
+                               DATE,
+                               purpose
+                               TEXT,
+                               status
+                               TEXT
+                               DEFAULT
+                               'Pending',
+                               total_cost
+                               INTEGER,
+                               kic_cost
+                               INTEGER,
+                               payment_method
+                               TEXT
+                               DEFAULT
+                               'AED',
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               FOREIGN
+                               KEY
+                           (
+                               user_id
+                           ) REFERENCES users
+                           (
+                               id
+                           ),
+                               FOREIGN KEY
+                           (
+                               lab_id
+                           ) REFERENCES labs
+                           (
+                               id
+                           )
+                               )''')
+
+            # Reviews table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS reviews
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               user_id
+                               INTEGER,
+                               item_type
+                               TEXT,
+                               item_id
+                               INTEGER,
+                               rating
+                               INTEGER,
+                               comment
+                               TEXT,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               FOREIGN
+                               KEY
+                           (
+                               user_id
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            # Notifications table
+            cursor.execute('''
+                           CREATE TABLE IF NOT EXISTS notifications
+                           (
+                               id
+                               INTEGER
+                               PRIMARY
+                               KEY
+                               AUTOINCREMENT,
+                               user_id
+                               INTEGER,
+                               title
+                               TEXT,
+                               message
+                               TEXT,
+                               type
+                               TEXT,
+                               is_read
+                               BOOLEAN
+                               DEFAULT
+                               FALSE,
+                               created_at
+                               TIMESTAMP
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               FOREIGN
+                               KEY
+                           (
+                               user_id
+                           ) REFERENCES users
+                           (
+                               id
+                           )
+                               )''')
+
+            self.conn.commit()
+            print("Database tables created successfully")
+
+        except sqlite3.Error as e:
+            print(f"Error creating tables: {e}")
+            st.error(f"Database error: {e}")
+
+    def seed_comprehensive_data(self):
+        """Seed comprehensive data for all features"""
         cursor = self.conn.cursor()
-        
-        # Проверяем, есть ли уже данные
-        cursor.execute("SELECT COUNT(*) FROM labs")
+
+        # Check if data already exists
+        cursor.execute("SELECT COUNT(*) FROM users")
         if cursor.fetchone()[0] > 0:
             return
-            
-        # Добавляем лаборатории
-        labs_data = [
-            ("Khalifa University Robotics Lab", "Khalifa University", "Abu Dhabi", 
-             "Robotics & AI", "2024-01-15", "Industrial Robots,Motion Capture System,Collaborative Robots,3D Vision Systems",
-             "State-of-the-art robotics laboratory specializing in humanoid robots, industrial automation, and AI-driven robotics research. Features 10 robotic workstations.",
-             "robotics.lab@ku.ac.ae", 1500, 4.8, None, 20, "3D Printers,VR Equipment,Conference Room,High-Speed Internet"),
-            
-            ("UAEU Advanced Materials Lab", "UAE University", "Al Ain",
-             "Materials Science", "2024-02-01", "SEM,X-ray Diffractometer,AFM,Tensile Testing Machine,Spectroscopy",
-             "Leading materials research facility with comprehensive characterization capabilities for nanomaterials, composites, and advanced alloys.",
-             "materials@uaeu.ac.ae", 1200, 4.6, None, 15, "Clean Room,Chemical Storage,Safety Equipment,Fume Hoods"),
-             
-            ("DSO Drone Testing Zone", "Dubai Silicon Oasis", "Dubai",
-             "UAV Testing", "2024-01-10", "Open Testing Field,Flight Monitoring Systems,Weather Station,Obstacle Course",
-             "Dedicated 30,000 sq.m outdoor facility for testing drone capabilities, autonomous flight systems, and aerial applications.",
-             "drones@dso.ae", 800, 4.9, None, 50, "Charging Stations,Control Tower,Safety Nets,Workshop"),
-            
-            ("AUS Biotechnology Research Center", "American University of Sharjah", "Sharjah",
-             "Biotechnology", "2024-01-20", "PCR Machines,Cell Culture Facility,Flow Cytometer,Centrifuges,Incubators",
-             "Modern biotech lab focusing on genetic research, molecular biology, and biomedical applications. BSL-2 certified facility.",
-             "biotech@aus.edu", 1100, 4.7, None, 12, "Sterile Room,Cold Storage,Autoclave,Biosafety Cabinets"),
-            
-            ("NYUAD Computer Vision Lab", "NYU Abu Dhabi", "Abu Dhabi",
-             "Computer Vision & AI", "2024-01-25", "GPU Clusters,Motion Tracking Systems,High-Speed Cameras,VR/AR Equipment",
-             "Cutting-edge facility for computer vision research with 50+ GPU cluster and specialized imaging hardware.",
-             "vision@nyuad.ae", 1400, 4.8, None, 18, "Server Room,Dark Room,Green Screen Studio,Meeting Rooms"),
-            
-            ("Masdar Institute Solar Testing Facility", "Masdar Institute", "Abu Dhabi",
-             "Renewable Energy", "2024-02-05", "Solar Simulators,PV Testing Equipment,Weather Monitoring,Thermal Cameras",
-             "Outdoor and indoor testing facilities for solar panels, concentrated solar power, and energy storage systems.",
-             "solar@masdar.ac.ae", 1300, 4.9, None, 25, "Outdoor Test Field,Control Room,Data Center,Workshop"),
-            
-            ("Zayed University 3D Printing Lab", "Zayed University", "Dubai",
-             "Advanced Manufacturing", "2024-01-18", "Industrial 3D Printers,Metal Printers,Scanners,CAD Workstations",
-             "Advanced additive manufacturing lab with 15+ 3D printers including metal, polymer, and ceramic printing capabilities.",
-             "3dlab@zu.ac.ae", 900, 4.5, None, 16, "Material Storage,Post-Processing Area,Design Studio,Training Room"),
-            
-            ("UAEU Nanotechnology Center", "UAE University", "Al Ain",
-             "Nanotechnology", "2024-02-08", "Electron Microscopes,AFM,Chemical Vapor Deposition,Spin Coater",
-             "State-of-the-art nanofabrication and characterization facility for nanomaterials research and development.",
-             "nanotech@uaeu.ac.ae", 1600, 4.7, None, 10, "Clean Room Class 100,Chemical Lab,Characterization Suite"),
-            
-            ("Ajman University IoT Lab", "Ajman University", "Ajman",
-             "IoT & Embedded Systems", "2024-01-30", "IoT Development Kits,Sensor Arrays,Network Equipment,Oscilloscopes",
-             "Comprehensive IoT testing facility with various sensors, communication protocols, and edge computing devices.",
-             "iot@ajman.ac.ae", 700, 4.4, None, 20, "Electronics Workshop,Server Rack,Meeting Space,Component Storage"),
-            
-            ("RAK Medical Simulation Center", "RAK Medical University", "Ras Al Khaimah",
-             "Medical Technology", "2024-02-12", "Medical Simulators,VR Training Systems,Surgical Robots,Imaging Equipment",
-             "Advanced medical training facility with high-fidelity patient simulators and surgical training systems.",
-             "medsim@rakmhsu.ac.ae", 1800, 4.8, None, 30, "Operating Theater,ICU Simulation,Debriefing Rooms,Control Center"),
-            
-            ("Khalifa University Quantum Lab", "Khalifa University", "Abu Dhabi",
-             "Quantum Computing", "2024-02-15", "Quantum Computer Access,Cryogenic Systems,Laser Systems,Control Electronics",
-             "One of the region's first quantum computing research facilities with access to quantum processors and simulators.",
-             "quantum@ku.ac.ae", 2500, 4.9, None, 8, "Shielded Room,Laser Safety Area,Theory Room,Visitor Center"),
-            
-            ("University of Sharjah Chemistry Lab", "University of Sharjah", "Sharjah",
-             "Chemistry & Pharma", "2024-01-22", "NMR Spectrometer,Mass Spectrometer,HPLC,Gas Chromatograph",
-             "Comprehensive analytical chemistry lab supporting pharmaceutical research and chemical analysis.",
-             "chemistry@sharjah.ac.ae", 1000, 4.6, None, 14, "Fume Hoods,Chemical Storage,Sample Prep Area,Instrument Room"),
-            
-            ("HBMSU VR Learning Lab", "Hamdan Bin Mohammed Smart University", "Dubai",
-             "Virtual Reality & Education", "2024-02-03", "VR Headsets,Motion Capture,Haptic Devices,360° Cameras",
-             "Immersive learning environment with latest VR/AR technology for educational content development.",
-             "vrlab@hbmsu.ac.ae", 850, 4.5, None, 24, "Motion Capture Studio,Development Stations,Demo Area,Content Library"),
-            
-            ("ADU Autonomous Systems Lab", "Abu Dhabi University", "Abu Dhabi",
-             "Autonomous Systems", "2024-01-28", "Autonomous Vehicles,LIDAR Systems,GPS/INS,Simulation Software",
-             "Testing facility for autonomous ground and aerial vehicles with indoor and outdoor testing areas.",
-             "autonomous@adu.ac.ae", 1350, 4.7, None, 22, "Test Track,Simulation Room,Vehicle Bay,Control Center"),
-            
-            ("Sorbonne Abu Dhabi AI Lab", "Sorbonne University Abu Dhabi", "Abu Dhabi",
-             "Artificial Intelligence", "2024-02-10", "AI Workstations,Deep Learning Servers,Robot Platforms,Smart Sensors",
-             "Multidisciplinary AI research lab focusing on machine learning, NLP, and intelligent systems.",
-             "ailab@sorbonne.ae", 1150, 4.6, None, 20, "Server Farm,Collaboration Space,Demo Room,Library"),
-        ]
-        
-        cursor.executemany('''
-        INSERT INTO labs (name, university, location, specialty, available_from, 
-                         equipment, description, contact, price_per_day, rating, 
-                         image_url, capacity, amenities)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', labs_data)
-        
-        # Добавляем пользователей и таланты
-        users_data = [
-            ("ahmed.mansouri@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Ahmed Al Mansouri", "talent", "Tech Innovations LLC"),
-            ("fatima.zaabi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Fatima Al Zaabi", "talent", "Analytics Solutions"),
-            ("rashid.marzouqi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Dr. Rashid Al Marzouqi", "talent", "Advanced Materials Research Center"),
-            ("sara.hashemi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Dr. Sara Al Hashemi", "talent", "BioTech Solutions"),
-            ("mohammed.qasimi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Mohammed Al Qasimi", "talent", "Neural Networks Lab"),
-            ("layla.shamsi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Layla Al Shamsi", "talent", "Sky Innovations"),
-            ("khalid.rahman@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Khalid Rahman", "talent", "IoT Systems Corp"),
-            ("mariam.ali@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Dr. Mariam Ali", "talent", "Renewable Energy Institute"),
-            ("omar.hassan@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Omar Hassan", "talent", "Autonomous Vehicles Lab"),
-            ("noura.abdullah@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Noura Abdullah", "talent", "3D Manufacturing Hub"),
-            ("youssef.ibrahim@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Dr. Youssef Ibrahim", "talent", "Quantum Computing Center"),
-            ("huda.salem@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Huda Salem", "talent", "Cybersecurity Solutions"),
-            ("tariq.ahmed@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Tariq Ahmed", "talent", "Blockchain Lab"),
-            ("aisha.muhammad@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Dr. Aisha Muhammad", "talent", "Nanotech Research Center"),
-            ("hassan.ali@example.com", hashlib.sha256("password123".encode()).hexdigest(),
-             "Hassan Ali", "talent", "Computer Vision Institute"),
-        ]
-        
-        for user_data in users_data:
-            cursor.execute('''
-            INSERT INTO users (email, password_hash, name, user_type, organization)
-            VALUES (?, ?, ?, ?, ?)
-            ''', user_data)
-            
-        # Добавляем таланты
-        talents_data = [
-            (1, "Robotics Engineer", "Abu Dhabi", "3 years", "MSc Robotics",
-             "Robotics,Computer Vision,Python,ROS,Arduino,MATLAB", "Part-time",
-             "Specialized in designing robotic control systems for industrial automation and research applications. Experience with humanoid robots and collaborative robotics.", 
-             150, "github.com/ahmed-robotics", "linkedin.com/in/ahmed-mansouri", 4.7),
-            
-            (2, "Data Scientist", "Abu Dhabi", "2 years", "MSc Computer Science",
-             "Machine Learning,Python,TensorFlow,PyTorch,SQL,Tableau", "Full-time",
-             "Expert in ML models and predictive analytics. Specialized in deep learning for financial forecasting and healthcare applications.", 
-             120, "github.com/fatima-ml", "linkedin.com/in/fatima-zaabi", 4.5),
-            
-            (3, "Materials Scientist", "Al Ain", "5 years", "PhD Materials Science",
-             "Materials Testing,Electron Microscopy,Thermal Analysis,X-ray Diffraction,Polymer Science", "Full-time",
-             "Published researcher specializing in nanomaterials and advanced composites for aerospace applications. 15+ peer-reviewed publications.", 
-             180, None, "linkedin.com/in/rashid-marzouqi", 4.9),
-            
-            (4, "Biotechnology Researcher", "Sharjah", "4 years", "PhD Biotechnology",
-             "PCR,Cell Culture,Molecular Biology,Biochemistry,CRISPR,Bioinformatics", "Contract",
-             "Expert in genetic engineering and molecular diagnostics. Developed rapid COVID-19 testing methods and working on cancer therapeutics.", 
-             160, "researchgate.net/sara-hashemi", "linkedin.com/in/sara-hashemi", 4.8),
-            
-            (5, "AI Developer", "Abu Dhabi", "3 years", "MSc Artificial Intelligence",
-             "Deep Learning,Computer Vision,TensorFlow,PyTorch,OpenCV,CUDA", "Remote",
-             "Specialized in neural network architecture and computer vision for retail analytics and smart city applications.", 
-             140, "github.com/mohammed-ai", "linkedin.com/in/mohammed-qasimi", 4.6),
-            
-            (6, "Drone Specialist", "Dubai", "2 years", "BSc Aerospace Engineering",
-             "UAV Systems,Flight Control,Aerial Photography,Mapping,LiDAR,Photogrammetry", "Full-time",
-             "Licensed drone pilot with expertise in autonomous flight systems and aerial surveying for construction and agriculture.", 
-             110, "dronepilot.ae/layla", "linkedin.com/in/layla-shamsi", 4.4),
-            
-            (7, "IoT Solutions Architect", "Dubai", "6 years", "MSc Electrical Engineering",
-             "IoT,Embedded Systems,C++,Python,MQTT,LoRaWAN,Edge Computing", "Full-time",
-             "Designed and deployed large-scale IoT networks for smart buildings and industrial monitoring with 50+ successful projects.", 
-             170, None, "linkedin.com/in/khalid-rahman", 4.8),
-            
-            (8, "Solar Energy Expert", "Abu Dhabi", "7 years", "PhD Renewable Energy",
-             "Solar PV,Energy Storage,MATLAB,Homer Pro,Grid Integration,Energy Modeling", "Contract",
-             "Leading expert in solar energy systems design and optimization for desert climates. Consulted on 10+ MW-scale projects.", 
-             200, "solarexpert.ae/mariam", "linkedin.com/in/mariam-ali", 4.9),
-            
-            (9, "Autonomous Systems Engineer", "Dubai", "4 years", "MSc Mechatronics",
-             "Self-Driving Cars,SLAM,ROS,C++,Sensor Fusion,Path Planning", "Full-time",
-             "Specialized in autonomous navigation algorithms and sensor integration for self-driving vehicles in urban environments.", 
-             155, "github.com/omar-autonomous", "linkedin.com/in/omar-hassan", 4.7),
-            
-            (10, "3D Printing Specialist", "Sharjah", "3 years", "BSc Mechanical Engineering",
-             "3D Printing,CAD,SolidWorks,Fusion 360,Material Science,Rapid Prototyping", "Part-time",
-             "Expert in additive manufacturing for aerospace and medical applications. Certified in metal and polymer 3D printing.", 
-             130, "3dportfolio.ae/noura", "linkedin.com/in/noura-abdullah", 4.5),
-            
-            (11, "Quantum Computing Researcher", "Abu Dhabi", "5 years", "PhD Physics",
-             "Quantum Algorithms,Qiskit,Python,Quantum Mechanics,Cryptography,Linear Algebra", "Remote",
-             "Research scientist working on quantum computing applications for optimization and cryptography problems.", 
-             220, "quantumresearch.ae/youssef", "linkedin.com/in/youssef-ibrahim", 4.9),
-            
-            (12, "Cybersecurity Analyst", "Dubai", "4 years", "MSc Information Security",
-             "Penetration Testing,Network Security,Python,Ethical Hacking,SIEM,Forensics", "Full-time",
-             "Certified ethical hacker with expertise in vulnerability assessment and security architecture for critical infrastructure.", 
-             145, None, "linkedin.com/in/huda-salem", 4.6),
-            
-            (13, "Blockchain Developer", "Dubai", "3 years", "BSc Computer Science",
-             "Solidity,Ethereum,Smart Contracts,Web3,JavaScript,Hyperledger", "Contract",
-             "Developed DeFi applications and supply chain solutions on blockchain. Expert in smart contract security and optimization.", 
-             135, "github.com/tariq-blockchain", "linkedin.com/in/tariq-ahmed", 4.5),
-            
-            (14, "Nanotechnology Researcher", "Al Ain", "6 years", "PhD Nanotechnology",
-             "Nanomaterials,AFM,SEM,Chemical Synthesis,Drug Delivery,Characterization", "Full-time",
-             "Leading researcher in nanomedicine and targeted drug delivery systems. 20+ publications in high-impact journals.", 
-             190, "nanotech.ae/aisha", "linkedin.com/in/aisha-muhammad", 4.8),
-            
-            (15, "Computer Vision Engineer", "Abu Dhabi", "4 years", "MSc Computer Engineering",
-             "Computer Vision,Deep Learning,OpenCV,Python,YOLO,Image Processing", "Remote",
-             "Specialized in real-time object detection and tracking systems for surveillance and autonomous systems.", 
-             150, "github.com/hassan-cv", "linkedin.com/in/hassan-ali", 4.7),
-        ]
-        
-        cursor.executemany('''
-        INSERT INTO talents (user_id, title, location, experience, education,
-                           skills, availability, bio, hourly_rate, portfolio_url,
-                           linkedin_url, rating)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', talents_data)
-        
-        # Добавляем проекты
-        projects_data = [
-            ("Smart City Sensor Network Development", "Dubai Future Foundation", "Dubai",
-             "2024-08-20", "2024-01-15", 
-             "Looking for IoT experts to develop and test an urban sensor network for monitoring air quality, traffic, and noise pollution. The project aims to create a scalable infrastructure for UAE smart cities.",
-             "Expertise in IoT sensor networks, data engineering, and embedded systems. Experience with LoRaWAN and edge computing preferred.",
-             "IoT,Data Engineering,Embedded Systems,Smart City", 50000, 80000, "Active", "projects@dubaifuture.gov.ae", 145, 12),
-            
-            ("Advanced Materials Testing for Construction", "Al Futtaim Construction", "Abu Dhabi",
-             "2024-07-25", "2024-01-18",
-             "Need materials scientists to analyze new sustainable construction materials. Focus on thermal performance, durability, and structural integrity of novel cement composites.",
-             "PhD in Materials Science or equivalent experience. Access to SEM, XRD, and thermal analysis equipment required.",
-             "Materials Science,Construction,Testing,Sustainability", 30000, 45000, "Active", "materials@alfuttaim.ae", 89, 5),
-            
-            ("Drone Delivery System Testing", "Noon", "Dubai",
-             "2024-09-15", "2024-01-20",
-             "Seeking drone specialists to validate last-mile delivery systems in urban environments. Testing navigation algorithms, payload handling, and collision avoidance.",
-             "Licensed drone pilot with experience in autonomous flight systems. Knowledge of UAE drone regulations essential.",
-             "Drones,UAV,Logistics,Navigation", 60000, 90000, "Active", "innovation@noon.com", 234, 18),
-            
-            ("AI-Powered Patient Diagnosis System", "Mubadala Healthcare", "Abu Dhabi",
-             "2024-04-10", "2023-11-05",
-             "Developed AI system for early disease detection using patient data. Successfully improved diagnostic accuracy by 35% for common conditions.",
-             "Machine learning expertise, healthcare domain knowledge, Python proficiency required.",
-             "AI,Healthcare,Machine Learning,Medical", 80000, 120000, "Completed", "ai.health@mubadala.ae", 567, 32),
-            
-            ("Blockchain Supply Chain Platform", "DP World", "Dubai",
-             "2024-10-01", "2024-01-25",
-             "Building a blockchain-based supply chain tracking system for port operations. Need blockchain developers and logistics experts.",
-             "Solidity, smart contract development, supply chain knowledge. Experience with Hyperledger preferred.",
-             "Blockchain,Supply Chain,Smart Contracts,Logistics", 70000, 100000, "Active", "blockchain@dpworld.com", 156, 9),
-            
-            ("Solar Panel Efficiency Optimization", "Masdar", "Abu Dhabi",
-             "2024-06-30", "2024-01-10",
-             "Research project to improve solar panel efficiency in desert conditions. Testing new coating materials and cooling systems.",
-             "PhD in Renewable Energy or Materials Science. Experience with solar PV systems and thermal management.",
-             "Solar Energy,Materials Science,Research,Renewable", 40000, 65000, "Active", "research@masdar.ae", 98, 7),
-            
-            ("Autonomous Vehicle Testing Program", "RTA Dubai", "Dubai",
-             "2024-12-01", "2024-02-01",
-             "Large-scale testing of autonomous vehicles in Dubai. Need engineers for sensor calibration, route mapping, and safety validation.",
-             "Experience with SLAM, sensor fusion, and autonomous navigation. ROS expertise required.",
-             "Autonomous Vehicles,Robotics,AI,Transportation", 100000, 150000, "Active", "autonomous@rta.ae", 412, 24),
-            
-            ("Biotechnology Lab Equipment Validation", "Khalifa University", "Abu Dhabi",
-             "2024-05-15", "2024-01-28",
-             "Validating new biotechnology lab equipment for research facility. Need biotech experts for protocol development and testing.",
-             "PhD in Biotechnology or related field. Experience with PCR, cell culture, and molecular biology techniques.",
-             "Biotechnology,Research,Lab Equipment,Validation", 35000, 50000, "Active", "biotech@ku.ac.ae", 67, 4),
-            
-            ("Quantum Computing Research Initiative", "UAEU", "Al Ain",
-             "2024-11-30", "2024-02-05",
-             "Exploring quantum computing applications for cryptography and optimization. Seeking quantum computing researchers.",
-             "PhD in Physics or Computer Science. Experience with quantum algorithms and Qiskit framework.",
-             "Quantum Computing,Research,Cryptography,Physics", 90000, 130000, "Pending", "quantum@uaeu.ac.ae", 43, 2),
-            
-            ("3D Printing Medical Devices", "Cleveland Clinic Abu Dhabi", "Abu Dhabi",
-             "2024-07-01", "2024-01-22",
-             "Developing custom medical implants using 3D printing. Need specialists in biocompatible materials and CAD design.",
-             "Experience with medical-grade 3D printing, CAD software, and biocompatible materials.",
-             "3D Printing,Medical Devices,CAD,Healthcare", 55000, 75000, "Active", "3dmedical@clevelandclinic.ae", 123, 8),
-            
-            ("Cybersecurity Audit for Banking System", "Emirates NBD", "Dubai",
-             "2024-04-30", "2024-01-30",
-             "Comprehensive security audit of banking infrastructure. Need certified ethical hackers and security analysts.",
-             "CISSP or CEH certification required. Experience with financial systems security.",
-             "Cybersecurity,Banking,Security Audit,Penetration Testing", 65000, 95000, "Active", "security@emiratesnbd.com", 189, 11),
-            
-            ("Nanotechnology Water Purification", "DEWA", "Dubai",
-             "2024-08-15", "2024-02-03",
-             "Developing nanomaterial-based water purification systems. Research focus on removing microplastics and heavy metals.",
-             "PhD in Nanotechnology or Chemistry. Experience with water treatment and nanomaterial synthesis.",
-             "Nanotechnology,Water Treatment,Research,Environmental", 50000, 70000, "Active", "nanotech@dewa.gov.ae", 76, 5),
-            
-            ("Computer Vision for Retail Analytics", "Majid Al Futtaim", "Dubai",
-             "2024-06-15", "2024-01-25",
-             "Implementing computer vision systems for customer behavior analysis and inventory management in retail stores.",
-             "Deep learning expertise, experience with object detection and tracking. Python and TensorFlow required.",
-             "Computer Vision,AI,Retail,Analytics", 45000, 65000, "Active", "tech@majidalfuttaim.com", 201, 15),
-            
-            ("IoT Smart Agriculture Platform", "Abu Dhabi Agriculture Authority", "Al Ain",
-             "2024-09-30", "2024-02-07",
-             "Building IoT platform for precision agriculture. Monitoring soil conditions, irrigation, and crop health.",
-             "IoT development experience, knowledge of agriculture technology. LoRaWAN and sensor networks expertise.",
-             "IoT,Agriculture,Sensors,Data Analytics", 40000, 60000, "Pending", "smartfarm@adaa.gov.ae", 54, 3),
-            
-            ("Renewable Energy Grid Integration", "TAQA", "Abu Dhabi",
-             "2024-10-15", "2024-02-10",
-             "Studying integration of renewable energy sources into existing power grid. Focus on stability and energy storage.",
-             "Electrical Engineering background, experience with grid systems and energy storage solutions.",
-             "Renewable Energy,Grid Systems,Energy Storage,Electrical Engineering", 60000, 85000, "Active", "renewable@taqa.com", 92, 6),
-        ]
-        
-        cursor.executemany('''
-        INSERT INTO projects (title, organization, location, deadline, posted,
-                            description, requirements, tags, budget_min, budget_max,
-                            status, contact, views, applications)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', projects_data)
-        
-        # Добавляем примеры бронирований
-        bookings_data = [
-            (1, 1, "2024-02-15", "2024-02-17", "Testing new robotic arm design", "Confirmed", 4500),
-            (2, 3, "2024-02-20", "2024-02-20", "Drone delivery system testing", "Confirmed", 800),
-            (3, 2, "2024-02-25", "2024-02-28", "Material analysis for aerospace project", "Pending", 3600),
-            (4, 4, "2024-03-01", "2024-03-03", "Biotech equipment training", "Confirmed", 3300),
-            (5, 5, "2024-03-05", "2024-03-06", "Computer vision algorithm testing", "Confirmed", 2800),
-        ]
-        
-        cursor.executemany('''
-        INSERT INTO bookings (user_id, lab_id, start_date, end_date, purpose, status, total_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', bookings_data)
-        
-        # Добавляем примеры отзывов
-        reviews_data = [
-            (1, "lab", 1, 5, "Excellent facilities and very helpful staff. The robotics equipment is top-notch!"),
-            (2, "lab", 3, 5, "Perfect for drone testing. Large open space and great safety measures."),
-            (3, "talent", 1, 5, "Ahmed is incredibly knowledgeable and helped us solve complex robotics challenges."),
-            (4, "talent", 2, 4, "Fatima delivered great insights for our data analysis project."),
-            (5, "lab", 5, 5, "State-of-the-art computer vision lab. GPU clusters performed excellently."),
-            (1, "talent", 5, 5, "Mohammed's AI expertise was invaluable for our project."),
-            (2, "lab", 2, 4, "Good materials testing facility, though booking process could be smoother."),
-            (3, "talent", 3, 5, "Dr. Rashid's materials science knowledge is exceptional. Highly recommended!"),
-        ]
-        
-        cursor.executemany('''
-        INSERT INTO reviews (user_id, item_type, item_id, rating, comment)
-        VALUES (?, ?, ?, ?, ?)
-        ''', reviews_data)
-        
-        # Добавляем примеры уведомлений
-        notifications_data = [
-            (1, "Booking Confirmed", "Your booking for Khalifa University Robotics Lab has been confirmed for Feb 15-17.", "booking"),
-            (2, "New Project Match", "A new project 'Drone Delivery System Testing' matches your skills.", "project"),
-            (3, "Review Received", "You received a 5-star review for your recent work.", "review"),
-            (4, "Booking Reminder", "Reminder: Your lab booking starts tomorrow at 9:00 AM.", "reminder"),
-            (5, "New Talent Available", "A new Computer Vision Engineer joined the platform.", "talent"),
-        ]
-        
-        cursor.executemany('''
-        INSERT INTO notifications (user_id, title, message, type)
-        VALUES (?, ?, ?, ?)
-        ''', notifications_data)
-        
-        self.conn.commit()
 
-# ==================== СТИЛИ ====================
-def load_css():
+        try:
+            # Seed universities
+            universities = [
+                ("United Arab Emirates University", "Al Ain", "UAE", "https://uaeu.ac.ae",
+                 "info@uaeu.ac.ae", "+971-3-713-5555",
+                 "The oldest university in the UAE, established in 1976", 1976, 14000, 700, 1, True),
+                ("American University of Sharjah", "Sharjah", "UAE", "https://aus.edu",
+                 "info@aus.edu", "+971-6-515-5555",
+                 "Leading American-style university in the Middle East", 1997, 6000, 400, 2, True),
+                ("Khalifa University", "Abu Dhabi", "UAE", "https://ku.ac.ae",
+                 "info@ku.ac.ae", "+971-2-312-3456",
+                 "Research-intensive university focusing on science and engineering", 2007, 4000, 500, 3, True),
+                ("NYU Abu Dhabi", "Abu Dhabi", "UAE", "https://nyuad.nyu.edu",
+                 "nyuad.info@nyu.edu", "+971-2-628-4000",
+                 "Liberal arts and science college bringing together NYU and Abu Dhabi", 2010, 2000, 300, 4, True),
+                ("Masdar Institute", "Abu Dhabi", "UAE", "https://masdar.ac.ae",
+                 "info@masdar.ac.ae", "+971-2-810-9999",
+                 "Graduate-level research university focused on alternative energy", 2007, 800, 150, 5, True)
+            ]
+
+            for uni in universities:
+                cursor.execute('''
+                               INSERT INTO universities (name, location, country, website, contact_email,
+                                                         contact_phone, description, established_year, total_students,
+                                                         total_faculty, ranking_national, is_verified)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               ''', uni)
+
+            # Seed companies
+            companies = [
+                ("Dubai Future Foundation", "Leading government organization driving future innovation in UAE",
+                 "Government", "Large", "Dubai", "https://dubaifuture.gov.ae", None, 2016, 50000, 15, 4.8, True),
+                ("Mubadala Investment Company", "Strategic investment company creating lasting value",
+                 "Investment", "Large", "Abu Dhabi", "https://mubadala.com", None, 2002, 75000, 22, 4.9, True),
+                ("ADNOC", "Leading energy and petrochemicals company",
+                 "Energy", "Large", "Abu Dhabi", "https://adnoc.ae", None, 1971, 60000, 18, 4.7, True),
+                ("Noon", "E-commerce platform and technology company",
+                 "Technology", "Large", "Dubai", "https://noon.com", None, 2016, 40000, 12, 4.6, True),
+                ("Emaar Properties", "Leading real estate development company",
+                 "Real Estate", "Large", "Dubai", "https://emaar.com", None, 1997, 45000, 20, 4.5, True),
+                ("Careem", "Revolutionary ride-hailing and delivery platform",
+                 "Technology", "Medium", "Dubai", "https://careem.com", None, 2012, 35000, 10, 4.7, True),
+                ("Etisalat", "Leading telecommunications provider",
+                 "Telecommunications", "Large", "Abu Dhabi", "https://etisalat.ae", None, 1976, 55000, 25, 4.6, True)
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO companies (name, description, industry, size, location, website,
+                                                      logo_url, founded_year, kic_balance, total_projects_posted,
+                                                      rating, is_verified)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               ''', companies)
+
+            # Seed users
+            users = [
+                ("ahmed.mansouri@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+                 "Ahmed Al Mansouri", "talent", "Tech Innovations LLC",
+                 "Robotics Engineer specializing in AI-driven automation systems. 5+ years experience in industrial robotics.",
+                 "Abu Dhabi", None, "+971501234567", "https://linkedin.com/in/ahmed-mansouri",
+                 "https://robotics-portfolio.ae", 1500, 15, 450, True, True),
+                ("fatima.zaabi@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+                 "Dr. Fatima Al Zaabi", "talent", "Analytics Solutions",
+                 "Data Scientist and Machine Learning expert with focus on healthcare applications.",
+                 "Dubai", None, "+971507654321", "https://linkedin.com/in/fatima-zaabi",
+                 "https://ml-portfolio.ae", 2200, 25, 780, True, True),
+                ("sara.hassan@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+                 "Sara Hassan", "company", "Dubai Future Foundation",
+                 "Innovation Manager at Dubai Future Foundation, leading emerging technology initiatives.",
+                 "Dubai", None, "+971509876543", "https://linkedin.com/in/sara-hassan", None,
+                 5000, 8, 320, True, True),
+                ("mohammed.rashid@uaeu.ac.ae", hashlib.sha256("password123".encode()).hexdigest(),
+                 "Dr. Mohammed Al Rashid", "researcher", "UAE University",
+                 "Professor of Computer Science specializing in AI and Machine Learning research.",
+                 "Al Ain", None, "+971501112233", "https://linkedin.com/in/mohammed-rashid",
+                 "https://uaeu.ac.ae/dr-rashid", 3000, 20, 650, True, True),
+                ("layla.ibrahim@example.com", hashlib.sha256("password123".encode()).hexdigest(),
+                 "Layla Ibrahim", "talent", "Biotech Solutions",
+                 "Biotechnology researcher with expertise in genomics and pharmaceutical development.",
+                 "Sharjah", None, "+971502223344", "https://linkedin.com/in/layla-ibrahim", None,
+                 1800, 12, 380, True, True)
+            ]
+
+            for user in users:
+                cursor.execute('''
+                               INSERT INTO users (email, password_hash, name, user_type, organization, bio, location,
+                                                  profile_image, phone, linkedin_url, website_url, kic_balance,
+                                                  total_projects_completed, reputation_score, is_verified, is_active)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               ''', user)
+
+            # Seed talents
+            talents_data = [
+                (1, "Senior Robotics Engineer", "Abu Dhabi", "5-10 years", "MSc Robotics Engineering",
+                 "Python,C++,ROS,Machine Learning,Computer Vision,MATLAB", "Full-time",
+                 "Expert in autonomous systems and industrial automation", 200, 100,
+                 "https://portfolio.ae/ahmed", "https://linkedin.com/in/ahmed", 4.8, 15, 45000,
+                 "Industrial Automation,Autonomous Systems", "ROS Certified,AWS ML Certified",
+                 "English,Arabic", True),
+                (2, "Lead Data Scientist", "Dubai", "10+ years", "PhD Computer Science",
+                 "Python,R,TensorFlow,PyTorch,SQL,Spark,Tableau", "Full-time",
+                 "Specializing in healthcare AI and predictive analytics", 250, 125,
+                 "https://portfolio.ae/fatima", "https://linkedin.com/in/fatima", 4.9, 25, 72000,
+                 "Healthcare AI,Predictive Analytics", "Google ML Engineer,AWS Data Analytics",
+                 "English,Arabic,French", True),
+                (5, "Biotechnology Research Consultant", "Sharjah", "5-10 years", "PhD Biotechnology",
+                 "Gene Sequencing,CRISPR,Cell Culture,Bioinformatics,Python", "Part-time",
+                 "Expert in genomics and pharmaceutical research", 180, 90,
+                 None, "https://linkedin.com/in/layla", 4.7, 12, 28000,
+                 "Genomics,Drug Discovery", "Certified Clinical Research", "English,Arabic", False)
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO talents (user_id, title, location, experience, education, skills,
+                                                    availability, bio, hourly_rate, kic_hourly_rate, portfolio_url,
+                                                    linkedin_url, rating, total_projects, total_earnings,
+                                                    specializations, certifications, languages, is_featured)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               ''', talents_data)
+
+            # Seed labs
+            labs = [
+                ("AI & Machine Learning Lab", 1, "Al Ain", "Artificial Intelligence",
+                 "2024-03-01", "GPU Clusters,Python Environment,TensorFlow,PyTorch,CUDA Workstations",
+                 "State-of-the-art AI research facility with latest GPU clusters", "ai.lab@uaeu.ac.ae",
+                 800, 400, 4.8, None, 20, "High-speed Internet,Coffee Station,Whiteboards,24/7 Access",
+                 45, True, "PhD or Masters in AI/ML required", "Safety briefing mandatory"),
+                ("Robotics Engineering Lab", 2, "Sharjah", "Robotics",
+                 "2024-03-01", "Industrial Robots,3D Printers,Sensors,Actuators,Motion Capture System",
+                 "Comprehensive robotics research and development facility", "robotics@aus.edu",
+                 1200, 600, 4.7, None, 15, "Tool Workshop,Testing Arena,Storage,VR Equipment",
+                 38, True, "Engineering background required", "Protective equipment mandatory"),
+                ("Biotechnology Research Lab", 3, "Abu Dhabi", "Biotechnology",
+                 "2024-03-01", "PCR Machines,Microscopes,Centrifuges,Incubators,Flow Cytometer",
+                 "Advanced biotechnology facility for cutting-edge research", "biolab@ku.ac.ae",
+                 1500, 750, 4.9, None, 12, "Clean Room,Chemical Storage,Emergency Shower,Fume Hoods",
+                 52, True, "Biology/Chemistry degree required", "Biosafety level 2 protocols"),
+                ("Nanotechnology Lab", 4, "Abu Dhabi", "Nanotechnology",
+                 "2024-03-01", "Electron Microscope,AFM,Cleanroom,Lithography Equipment",
+                 "Advanced nanoscale research and fabrication facility", "nanolab@nyuad.nyu.edu",
+                 2000, 1000, 4.9, None, 8, "Cleanroom,Gas Storage,Chemical Storage",
+                 28, True, "Nanotechnology training required", "Cleanroom protocols mandatory"),
+                ("Renewable Energy Lab", 5, "Abu Dhabi", "Energy",
+                 "2024-03-01", "Solar Panels,Wind Turbines,Battery Storage,Power Analyzers",
+                 "Renewable energy testing and development facility", "energy@masdar.ac.ae",
+                 1000, 500, 4.7, None, 25, "Outdoor Testing Area,Workshop,Conference Room",
+                 35, True, "Energy engineering background", "Electrical safety training required")
+            ]
+
+            for lab in labs:
+                cursor.execute('''
+                               INSERT INTO labs (name, university_id, location, specialty, available_from, equipment,
+                                                 description, contact, price_per_day, kic_price_per_day, rating,
+                                                 image_url, capacity, amenities, total_bookings, is_featured,
+                                                 access_requirements, safety_protocols)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               ''', lab)
+
+            # Seed projects
+            projects = [
+                ("AI-Powered Smart City Infrastructure", "Dubai Future Foundation", 1, "Dubai",
+                 "2024-08-15", "2024-02-01",
+                 "Develop AI systems for smart traffic management, energy optimization, and citizen services integration.",
+                 "AI/ML expertise, smart city experience, IoT knowledge, Arabic language preferred",
+                 "AI,Smart City,IoT,Machine Learning,Arabic", 80000, 120000, 4000, 6000, "Active",
+                 "projects@dubaifuture.gov.ae", 234, 18, "Innovation", "High", True, 3),
+                ("Blockchain Supply Chain Transparency", "Mubadala Investment Company", 2, "Abu Dhabi",
+                 "2024-07-30", "2024-02-05",
+                 "Create blockchain solution for supply chain transparency in healthcare and pharmaceuticals.",
+                 "Blockchain development, smart contracts, healthcare domain knowledge",
+                 "Blockchain,Healthcare,Supply Chain,Smart Contracts", 60000, 90000, 3000, 4500, "Active",
+                 "blockchain@mubadala.ae", 156, 12, "Research", "Medium", False, 3),
+                ("Renewable Energy Grid Optimization", "ADNOC", 3, "Abu Dhabi",
+                 "2024-09-01", "2024-02-10",
+                 "Optimize energy distribution using AI and IoT sensors for renewable energy integration.",
+                 "Energy systems, AI/ML, IoT, electrical engineering background",
+                 "Energy,AI,IoT,Sustainability,Grid Systems", 100000, 150000, 5000, 7500, "Active",
+                 "energy@adnoc.ae", 189, 15, "Innovation", "High", True, 3),
+                ("E-commerce Personalization Engine", "Noon", 4, "Dubai",
+                 "2024-06-30", "2024-02-12",
+                 "Build advanced ML models for personalized shopping experiences and recommendations.",
+                 "Machine Learning, recommendation systems, e-commerce experience",
+                 "ML,E-commerce,Python,Recommendation Systems", 70000, 100000, 3500, 5000, "Active",
+                 "tech@noon.com", 203, 22, "Development", "Medium", True, 3),
+                ("Smart Building Management System", "Emaar Properties", 5, "Dubai",
+                 "2024-08-01", "2024-02-15",
+                 "Develop IoT-based building management system for energy efficiency and tenant comfort.",
+                 "IoT development, building automation, energy management",
+                 "IoT,Smart Buildings,Energy,Automation", 85000, 125000, 4250, 6250, "Active",
+                 "innovation@emaar.com", 145, 10, "Development", "Medium", False, 3)
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO projects (title, organization, company_id, location, deadline, posted,
+                                                     description, requirements, tags, budget_min, budget_max,
+                                                     kic_budget_min, kic_budget_max, status, contact, views,
+                                                     applications, project_type, urgency, remote_possible, created_by)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               ''', projects)
+
+            # Seed user projects
+            user_projects = [
+                (1, 1, "lead_engineer", "active", "2024-02-01", None,
+                 "Leading the robotics and automation team", None, None),
+                (2, 2, "data_scientist", "active", "2024-02-05", None,
+                 "Developing predictive models for supply chain", None, None),
+                (1, 3, "consultant", "completed", "2024-01-15", "2024-02-28",
+                 "Consulted on industrial automation solutions", 4.8, 4000),
+                (2, 4, "ml_engineer", "active", "2024-02-12", None,
+                 "Building recommendation algorithms", None, None),
+                (5, 2, "researcher", "active", "2024-02-08", None,
+                 "Researching blockchain applications in pharma", None, None)
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO user_projects (user_id, project_id, role, status, joined_date,
+                                                          completion_date, contribution_description, rating_received,
+                                                          payment_received)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               ''', user_projects)
+
+            # Seed connections
+            connections = [
+                (1, 2, "accepted", "Would love to connect and discuss AI projects",
+                 datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
+                (1, 4, "accepted", "Great to connect with fellow researchers",
+                 datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
+                (2, 5, "accepted", "Looking forward to collaborating",
+                 datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
+                (3, 1, "pending", "Would like to discuss potential projects",
+                 datetime.now().strftime('%Y-%m-%d %H:%M:%S'), None),
+                (4, 5, "accepted", "Fellow researcher in biotech",
+                 datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO connections (requester_id, addressee_id, status, message, created_at, accepted_at)
+                               VALUES (?, ?, ?, ?, ?, ?)
+                               ''', connections)
+
+            # Seed messages
+            messages = [
+                (1, 2, "Hi Fatima! I saw your work on healthcare AI. Would love to discuss potential collaboration.",
+                 "text", False),
+                (2, 1, "Hi Ahmed! Thanks for reaching out. I'd be happy to discuss. When are you available?", "text",
+                 True),
+                (1, 2, "I'm free this Thursday afternoon or Friday morning. What works for you?", "text", False),
+                (2, 1, "Thursday afternoon works great! Let's meet at 3 PM?", "text", True),
+                (3, 1, "Ahmed, we have an exciting robotics project coming up. Are you interested?", "text", False)
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO messages (sender_id, receiver_id, message, message_type, is_read)
+                               VALUES (?, ?, ?, ?, ?)
+                               ''', messages)
+
+            # Seed activities
+            activities = [
+                (1, "project_completed", "Completed Robotics Automation Project",
+                 "Successfully delivered industrial automation solution for manufacturing company", 3),
+                (2, "skill_certified", "Earned AI/ML Certification",
+                 "Completed advanced certification in Machine Learning from Stanford Online", None),
+                (1, "connection_made", "Connected with Dr. Fatima Al Zaabi",
+                 "New professional connection in Data Science field", 2),
+                (2, "project_started", "Started Healthcare Analytics Project",
+                 "Beginning new project on predictive analytics for patient outcomes", 2),
+                (4, "university_project", "Published Research Paper",
+                 "Co-authored paper on AI applications in smart cities", None),
+                (5, "lab_booking", "Booked Biotechnology Lab",
+                 "Reserved lab for genomics research project", 3)
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO activities (user_id, activity_type, title, description, related_id)
+                               VALUES (?, ?, ?, ?, ?)
+                               ''', activities)
+
+            # Seed KIC transactions
+            kic_transactions = [
+                (1, "project_payment", 4000, "Payment for completed robotics project", 3),
+                (2, "lab_booking", -750, "Paid for AI lab booking using KIC", 1),
+                (1, "bonus", 500, "Performance bonus for high-rated project delivery", None),
+                (2, "talent_fee", 1200, "Received payment for consulting work", 2),
+                (4, "research_grant", 2000, "Research grant for smart city project", 1),
+                (5, "lab_booking", -500, "Biotech lab booking payment", 3)
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO kic_transactions (user_id, transaction_type, amount, description, related_id)
+                               VALUES (?, ?, ?, ?, ?)
+                               ''', kic_transactions)
+
+            # Seed project applications
+            applications = [
+                (1, 1,
+                 "I have extensive experience in robotics and AI integration. My recent project involved developing autonomous systems for industrial automation. I can bring valuable expertise to your smart city initiative.",
+                 100000, 5000, "pending", None, None),
+                (1, 2,
+                 "With my background in IoT and blockchain, I can contribute to building secure and transparent supply chain solutions.",
+                 85000, 4250, "accepted", datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                 "Great experience! Welcome to the team."),
+                (2, 4,
+                 "As a ML expert specializing in recommendation systems, I have built similar solutions for e-commerce platforms.",
+                 95000, 4750, "pending", None, None)
+            ]
+
+            for app in applications:
+                cursor.execute('''
+                               INSERT INTO project_applications (project_id, user_id, application_text,
+                                                                 proposed_rate, proposed_kic_rate, status,
+                                                                 response_date, response_message)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                               ''', app)
+
+            # Seed bookings
+            bookings = [
+                (1, 1, "2024-03-15", "2024-03-17", "Testing AI models for robotics project",
+                 "Confirmed", 2400, 1200, "KIC"),
+                (2, 1, "2024-03-20", "2024-03-22", "Machine learning experiments",
+                 "Pending", 2400, 1200, "AED"),
+                (5, 3, "2024-03-25", "2024-03-30", "Genomics research project",
+                 "Confirmed", 7500, 3750, "KIC")
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO bookings (user_id, lab_id, start_date, end_date, purpose,
+                                                     status, total_cost, kic_cost, payment_method)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               ''', bookings)
+
+            # Seed notifications
+            notifications = [
+                (1, "New Connection Request", "Sara Hassan wants to connect with you", "connection", False),
+                (2, "Project Application Update", "Your application for 'Blockchain Supply Chain' was accepted!",
+                 "application", True),
+                (1, "Lab Booking Confirmed", "Your booking for AI Lab on March 15-17 is confirmed", "booking", True),
+                (2, "New Message", "You have a new message from Ahmed Al Mansouri", "message", False),
+                (4, "Research Grant Approved", "Your research grant of 2000 KIC has been approved", "grant", True)
+            ]
+
+            cursor.executemany('''
+                               INSERT INTO notifications (user_id, title, message, type, is_read)
+                               VALUES (?, ?, ?, ?, ?)
+                               ''', notifications)
+
+            self.conn.commit()
+            print("Comprehensive sample data seeded successfully")
+
+        except sqlite3.Error as e:
+            print(f"Error seeding data: {e}")
+            self.conn.rollback()
+
+    def reset_database(self):
+        """Reset database completely"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = cursor.fetchall()
+
+            for table in tables:
+                cursor.execute(f"DROP TABLE IF EXISTS {table[0]}")
+
+            self.conn.commit()
+            print("Database reset successfully")
+            self.create_tables()
+
+        except sqlite3.Error as e:
+            print(f"Error resetting database: {e}")
+
+
+# ==================== ENHANCED STYLES ====================
+def load_ultimate_css():
     st.markdown("""
     <style>
-        /* Основные стили */
+        /* Modern light theme with LinkedIn-inspired design */
         .main {
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            color: #ffffff;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
         }
-        
-        /* Анимированный градиент для заголовков */
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
+
+        /* Enhanced gradient text */
         .gradient-text {
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background: linear-gradient(-45deg, #0077b5, #00a0dc, #0073e6, #005582);
             background-size: 400% 400%;
             animation: gradient 15s ease infinite;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: bold;
         }
-        
-        /* Карточки с эффектом стекла */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Modern card design */
+        .modern-card {
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 119, 181, 0.1);
             padding: 1.5rem;
             margin-bottom: 1rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 119, 181, 0.1), 0 2px 4px -1px rgba(0, 119, 181, 0.06);
+            backdrop-filter: blur(8px);
         }
-        
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+
+        .modern-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 119, 181, 0.15), 0 10px 10px -5px rgba(0, 119, 181, 0.04);
+            border-color: rgba(0, 119, 181, 0.2);
         }
-        
-        /* Кнопки с градиентом */
-        .gradient-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 0.75rem 2rem;
-            border-radius: 50px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.4);
-        }
-        
-        .gradient-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.6);
-        }
-        
-        /* Навигация */
+
+        /* Premium navigation bar */
         .nav-container {
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(0, 119, 181, 0.1);
             padding: 1rem 0;
             position: sticky;
             top: 0;
             z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgba(0, 119, 181, 0.05);
         }
-        
-        .nav-item {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
+
+        /* Profile card styling */
+        .profile-card {
+            background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 0 auto 1rem auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* KIC Balance styling */
+        .kic-balance {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
             padding: 0.5rem 1rem;
+            border-radius: 24px;
+            font-weight: bold;
+            display: inline-block;
+            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+        }
+
+        /* Message bubble styling */
+        .message-bubble {
+            border-radius: 18px;
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            max-width: 70%;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-bubble.sent {
+            background: linear-gradient(135deg, #0077b5 0%, #005582 100%);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-bubble.received {
+            background: #f1f5f9;
+            color: #1e293b;
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Activity feed styling */
+        .activity-item {
+            background: white;
+            border-left: 4px solid transparent;
+            border-image: linear-gradient(to bottom, #0077b5, #00a0dc) 1;
             border-radius: 8px;
-            transition: all 0.3s ease;
-            margin: 0 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0, 119, 181, 0.1);
+            transition: all 0.2s ease;
         }
-        
-        .nav-item:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.1);
+
+        .activity-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 8px rgba(0, 119, 181, 0.15);
         }
-        
-        .nav-item.active {
-            color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        /* Статус бейджи */
+
+        /* Status badges */
         .status-badge {
             padding: 0.25rem 0.75rem;
-            border-radius: 20px;
+            border-radius: 16px;
             font-size: 0.8rem;
             font-weight: 600;
             display: inline-block;
+            margin: 0.2rem;
+            transition: all 0.2s ease;
         }
-        
-        .status-active {
-            background: rgba(52, 211, 153, 0.2);
-            color: #34d399;
-            border: 1px solid #34d399;
+
+        .status-online {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            border: 1px solid #16a34a;
         }
-        
-        .status-pending {
-            background: rgba(251, 191, 36, 0.2);
-            color: #fbbf24;
-            border: 1px solid #fbbf24;
+
+        .status-verified {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            border: 1px solid #2563eb;
         }
-        
-        .status-completed {
-            background: rgba(96, 165, 250, 0.2);
-            color: #60a5fa;
-            border: 1px solid #60a5fa;
+
+        .status-featured {
+            background: rgba(251, 191, 36, 0.1);
+            color: #d97706;
+            border: 1px solid #d97706;
         }
-        
-        /* Теги */
+
+        /* Professional skill tags */
         .skill-tag {
-            background: rgba(139, 92, 246, 0.2);
-            color: #a78bfa;
+            background: rgba(0, 119, 181, 0.08);
+            color: #0077b5;
             padding: 0.3rem 0.8rem;
-            border-radius: 15px;
+            border-radius: 20px;
             font-size: 0.85rem;
             margin: 0.2rem;
             display: inline-block;
-            border: 1px solid rgba(139, 92, 246, 0.3);
+            border: 1px solid rgba(0, 119, 181, 0.2);
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
-        
-        /* Анимация загрузки */
-        .loading-dots {
-            display: inline-block;
-            position: relative;
-            width: 80px;
-            height: 20px;
+
+        .skill-tag:hover {
+            background: rgba(0, 119, 181, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 119, 181, 0.2);
         }
-        
-        .loading-dots div {
-            position: absolute;
-            top: 8px;
-            width: 13px;
-            height: 13px;
-            border-radius: 50%;
-            background: #667eea;
-            animation-timing-function: cubic-bezier(0, 1, 1, 0);
-        }
-        
-        .loading-dots div:nth-child(1) {
-            left: 8px;
-            animation: loading-dots1 0.6s infinite;
-        }
-        
-        .loading-dots div:nth-child(2) {
-            left: 32px;
-            animation: loading-dots2 0.6s infinite;
-        }
-        
-        .loading-dots div:nth-child(3) {
-            left: 56px;
-            animation: loading-dots2 0.6s infinite;
-        }
-        
-        @keyframes loading-dots1 {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
-        }
-        
-        @keyframes loading-dots2 {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(24px, 0); }
-        }
-        
-        /* Метрики дашборда */
+
+        /* Enhanced metrics */
         .metric-card {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+            border-radius: 16px;
             padding: 1.5rem;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 119, 181, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
-        
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #0077b5, #00a0dc);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0, 119, 181, 0.1);
+        }
+
         .metric-value {
             font-size: 2.5rem;
             font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            line-height: 1.2;
         }
-        
-        .metric-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-            margin-top: 0.5rem;
-        }
-        
-        /* Уведомления */
-        .notification {
-            background: rgba(59, 130, 246, 0.1);
-            border-left: 4px solid #3b82f6;
+
+        /* Chat interface */
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid rgba(0, 119, 181, 0.1);
+            border-radius: 12px;
             padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
+            background: linear-gradient(to bottom, #f8fafc, #ffffff);
         }
-        
-        .notification.unread {
-            background: rgba(59, 130, 246, 0.2);
-        }
-        
-        /* Календарь */
-        .calendar-day {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 0.5rem;
-            text-align: center;
-            cursor: pointer;
+
+        /* Project cards */
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(0, 119, 181, 0.1);
             transition: all 0.3s ease;
-        }
-        
-        .calendar-day:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .calendar-day.booked {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid #ef4444;
-        }
-        
-        .calendar-day.available {
-            background: rgba(34, 197, 94, 0.2);
-            border: 1px solid #22c55e;
-        }
-        
-        /* Форма поиска */
-        .search-container {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50px;
-            padding: 0.5rem 1.5rem;
-            display: flex;
-            align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .search-input {
-            background: transparent;
-            border: none;
-            color: white;
-            width: 100%;
-            outline: none;
-            padding: 0.5rem;
-        }
-        
-        /* Прогресс бар */
-        .progress-bar {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            height: 10px;
+            position: relative;
             overflow: hidden;
         }
-        
-        .progress-fill {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.3s ease;
-        }
-        
-        /* Рейтинг звезды */
-        .rating-stars {
-            color: #fbbf24;
-            font-size: 1.2rem;
-        }
-        
-        /* Тултипы */
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            background-color: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 0.5rem 1rem;
+
+        .project-card::after {
+            content: '';
             position: absolute;
-            z-index: 1;
-            bottom: 125%;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--urgency-color, #0077b5), transparent);
+            opacity: 0.7;
+        }
+
+        /* Project urgency indicators */
+        .urgency-high {
+            color: #dc2626;
+            font-weight: bold;
+            --urgency-color: #dc2626;
+        }
+
+        .urgency-medium {
+            color: #d97706;
+            font-weight: bold;
+            --urgency-color: #d97706;
+        }
+
+        .urgency-low {
+            color: #16a34a;
+            font-weight: bold;
+            --urgency-color: #16a34a;
+        }
+
+        /* Professional buttons */
+        .professional-btn {
+            background: linear-gradient(135deg, #0077b5 0%, #005582 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .professional-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
             left: 50%;
-            margin-left: -60px;
-            opacity: 0;
-            transition: opacity 0.3s;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
         }
-        
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
+
+        .professional-btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
-        
-        /* Скроллбар */
+
+        .professional-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 119, 181, 0.3);
+        }
+
+        /* Lab cards */
+        .lab-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(0, 119, 181, 0.1);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .lab-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 119, 181, 0.15);
+        }
+
+        /* Access credentials card */
+        .credentials-card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Consolas', monospace;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .credentials-card::before {
+            content: '🔐';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            opacity: 0.1;
+        }
+
+        /* Enhanced form styling */
+        .stTextInput > div > div > input,
+        .stSelectbox > div > div > select,
+        .stTextArea > div > div > textarea {
+            border-radius: 8px;
+            border: 1px solid rgba(0, 119, 181, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .stTextInput > div > div > input:focus,
+        .stSelectbox > div > div > select:focus,
+        .stTextArea > div > div > textarea:focus {
+            border-color: #0077b5;
+            box-shadow: 0 0 0 3px rgba(0, 119, 181, 0.1);
+        }
+
+        /* Tab styling */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 0.5rem;
+            border-radius: 12px;
+        }
+
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%);
+        }
+
+        /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 10px;
+            height: 10px;
         }
-        
+
         ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f1f5f9;
             border-radius: 5px;
         }
-        
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%);
+            border-radius: 5px;
+            transition: all 0.2s ease;
+        }
+
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            background: linear-gradient(135deg, #005582 0%, #0077b5 100%);
+        }
+
+        /* Notification badge */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        /* Success animation */
+        @keyframes successPulse {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .success-animation {
+            animation: successPulse 0.5s ease-out;
         }
     </style>
     """, unsafe_allow_html=True)
 
-# ==================== УТИЛИТЫ ====================
-def st_rerun():
-    """Совместимость с разными версиями Streamlit"""
-    try:
-        st.rerun()
-    except AttributeError:
-        st.experimental_rerun()
-@st.cache_data
-def load_lottie_url(url: str):
-    """Загрузка Lottie анимации"""
-    try:
-        r = requests.get(url)
-        if r.status_code != 200:
-            return None
-        return r.json()
-    except:
-        return None
 
-def create_rating_stars(rating: float) -> str:
-    """Создание HTML для звезд рейтинга"""
-    full_stars = int(rating)
-    half_star = 1 if rating - full_stars >= 0.5 else 0
-    empty_stars = 5 - full_stars - half_star
-    
-    stars_html = "★" * full_stars
-    if half_star:
-        stars_html += "☆"
-    stars_html += "☆" * empty_stars
-    
-    return f'<span class="rating-stars">{stars_html}</span> {rating:.1f}'
-
-# ==================== КОМПОНЕНТЫ ====================
+# ==================== AUTHENTICATION & MANAGERS ====================
 class AuthManager:
-    """Менеджер аутентификации"""
-    
     @staticmethod
     def hash_password(password: str) -> str:
         return hashlib.sha256(password.encode()).hexdigest()
-    
+
     @staticmethod
-    def login(email: str, password: str, db: Database) -> Optional[Dict]:
+    def login(email: str, password: str, db: Database):
         cursor = db.conn.cursor()
-        cursor.execute("""
-            SELECT id, email, name, user_type, organization 
-            FROM users 
-            WHERE email = ? AND password_hash = ?
-        """, (email, AuthManager.hash_password(password)))
-        
-        user = cursor.fetchone()
-        if user:
-            return dict(user)
-        return None
-    
+        try:
+            cursor.execute("""
+                           SELECT *
+                           FROM users
+                           WHERE email = ?
+                             AND password_hash = ?
+                             AND is_active = TRUE
+                           """, (email, AuthManager.hash_password(password)))
+
+            user = cursor.fetchone()
+            if user:
+                return dict(user)
+            return None
+        except sqlite3.Error as e:
+            st.error(f"Login error: {e}")
+            return None
+
     @staticmethod
-    def register(email: str, password: str, name: str, user_type: str, 
-                organization: str, db: Database) -> bool:
+    def register(email: str, password: str, name: str, user_type: str,
+                 organization: str, location: str, phone: str, db: Database) -> bool:
         try:
             cursor = db.conn.cursor()
             cursor.execute("""
-                INSERT INTO users (email, password_hash, name, user_type, organization)
-                VALUES (?, ?, ?, ?, ?)
-            """, (email, AuthManager.hash_password(password), name, user_type, organization))
+                           INSERT INTO users (email, password_hash, name, user_type,
+                                              organization, location, phone, kic_balance)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                           """, (email, AuthManager.hash_password(password),
+                                 name, user_type, organization, location, phone, 1000))
             db.conn.commit()
             return True
         except sqlite3.IntegrityError:
             return False
+        except sqlite3.Error as e:
+            st.error(f"Registration error: {e}")
+            return False
 
-class NotificationManager:
-    """Менеджер уведомлений"""
-    
+
+class SocialManager:
     @staticmethod
-    def create_notification(user_id: int, title: str, message: str, 
-                          notification_type: str, db: Database):
+    def send_connection_request(requester_id: int, addressee_id: int, message: str, db: Database):
         cursor = db.conn.cursor()
         cursor.execute("""
-            INSERT INTO notifications (user_id, title, message, type)
-            VALUES (?, ?, ?, ?)
-        """, (user_id, title, message, notification_type))
+                       INSERT INTO connections (requester_id, addressee_id, message)
+                       VALUES (?, ?, ?)
+                       """, (requester_id, addressee_id, message))
         db.conn.commit()
-    
+
     @staticmethod
-    def get_unread_count(user_id: int, db: Database) -> int:
+    def accept_connection(connection_id: int, db: Database):
         cursor = db.conn.cursor()
         cursor.execute("""
-            SELECT COUNT(*) FROM notifications 
-            WHERE user_id = ? AND is_read = FALSE
-        """, (user_id,))
-        return cursor.fetchone()[0]
-    
+                       UPDATE connections
+                       SET status      = 'accepted',
+                           accepted_at = CURRENT_TIMESTAMP
+                       WHERE id = ?
+                       """, (connection_id,))
+        db.conn.commit()
+
     @staticmethod
-    def get_notifications(user_id: int, db: Database, limit: int = 10):
+    def send_message(sender_id: int, receiver_id: int, message: str, db: Database):
         cursor = db.conn.cursor()
         cursor.execute("""
-            SELECT * FROM notifications 
-            WHERE user_id = ? 
-            ORDER BY created_at DESC 
-            LIMIT ?
-        """, (user_id, limit))
+                       INSERT INTO messages (sender_id, receiver_id, message)
+                       VALUES (?, ?, ?)
+                       """, (sender_id, receiver_id, message))
+        db.conn.commit()
+
+    @staticmethod
+    def get_conversations(user_id: int, db: Database):
+        cursor = db.conn.cursor()
+        cursor.execute("""
+                       SELECT DISTINCT CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as other_user_id,
+                                       u.name,
+                                       u.user_type,
+                                       MAX(m.created_at)                                           as last_message_time
+                       FROM messages m
+                                JOIN users u ON u.id = CASE WHEN m.sender_id = ? THEN m.receiver_id ELSE m.sender_id END
+                       WHERE ? IN (sender_id, receiver_id)
+                       GROUP BY other_user_id, u.name, u.user_type
+                       ORDER BY last_message_time DESC
+                       """, (user_id, user_id, user_id))
         return cursor.fetchall()
 
-# ==================== СТРАНИЦЫ ====================
-def show_login_page(db: Database):
-    """Страница входа и регистрации"""
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        st.markdown('<h1 class="gradient-text" style="text-align: center; font-size: 3rem;">UAE Innovate Hub</h1>', 
-                   unsafe_allow_html=True)
-        st.markdown('<p style="text-align: center; color: rgba(255,255,255,0.7);">Connect. Innovate. Test. Collaborate.</p>', 
-                   unsafe_allow_html=True)
+    @staticmethod
+    def get_messages(user1_id: int, user2_id: int, db: Database):
+        cursor = db.conn.cursor()
+        cursor.execute("""
+                       SELECT m.*, u.name as sender_name
+                       FROM messages m
+                                JOIN users u ON m.sender_id = u.id
+                       WHERE (sender_id = ? AND receiver_id = ?)
+                          OR (sender_id = ? AND receiver_id = ?)
+                       ORDER BY created_at ASC
+                       """, (user1_id, user2_id, user2_id, user1_id))
+        return cursor.fetchall()
 
-        # Lottie анимация
-        lottie_url = "https://assets5.lottiefiles.com/packages/lf20_fcfjwiyb.json"
-        lottie_json = load_lottie_url(lottie_url)
-        if lottie_json:
-            st_lottie(lottie_json, height=200)
-        
-        tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
-        
+
+class KICManager:
+    @staticmethod
+    def transfer_kic(from_user_id: int, to_user_id: int, amount: int,
+                     description: str, db: Database) -> bool:
+        cursor = db.conn.cursor()
+
+        cursor.execute("SELECT kic_balance FROM users WHERE id = ?", (from_user_id,))
+        balance = cursor.fetchone()[0]
+
+        if balance >= amount:
+            cursor.execute("""
+                           UPDATE users
+                           SET kic_balance = kic_balance - ?
+                           WHERE id = ?
+                           """, (amount, from_user_id))
+
+            cursor.execute("""
+                           UPDATE users
+                           SET kic_balance = kic_balance + ?
+                           WHERE id = ?
+                           """, (amount, to_user_id))
+
+            cursor.execute("""
+                           INSERT INTO kic_transactions (user_id, transaction_type, amount, description)
+                           VALUES (?, 'sent', ?, ?)
+                           """, (from_user_id, -amount, description))
+
+            cursor.execute("""
+                           INSERT INTO kic_transactions (user_id, transaction_type, amount, description)
+                           VALUES (?, 'received', ?, ?)
+                           """, (to_user_id, amount, description))
+
+            db.conn.commit()
+            return True
+        return False
+
+    @staticmethod
+    def get_kic_balance(user_id: int, db: Database) -> int:
+        cursor = db.conn.cursor()
+        cursor.execute("SELECT kic_balance FROM users WHERE id = ?", (user_id,))
+        return cursor.fetchone()[0]
+
+    @staticmethod
+    def get_kic_transactions(user_id: int, db: Database, limit: int = 10):
+        cursor = db.conn.cursor()
+        cursor.execute("""
+                       SELECT *
+                       FROM kic_transactions
+                       WHERE user_id = ?
+                       ORDER BY created_at DESC LIMIT ?
+                       """, (user_id, limit))
+        return cursor.fetchall()
+
+
+class LabAccessManager:
+    @staticmethod
+    def generate_credentials():
+        username = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(8))
+        password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        return username, password
+
+    @staticmethod
+    def grant_lab_access(lab_id: int, user_id: int, access_level: str,
+                         valid_from: str, valid_until: str, db: Database):
+        username, password = LabAccessManager.generate_credentials()
+        password_hash = AuthManager.hash_password(password)
+
+        cursor = db.conn.cursor()
+        try:
+            cursor.execute("""
+                INSERT OR REPLACE INTO lab_access 
+                (lab_id, user_id, access_level, username, password_hash, valid_from, valid_until)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (lab_id, user_id, access_level, username, password_hash, valid_from, valid_until))
+            db.conn.commit()
+            return username, password
+        except sqlite3.Error as e:
+            st.error(f"Error granting lab access: {e}")
+            return None, None
+
+    @staticmethod
+    def verify_lab_access(lab_id: int, username: str, password: str, db: Database):
+        cursor = db.conn.cursor()
+        password_hash = AuthManager.hash_password(password)
+
+        try:
+            cursor.execute("""
+                           SELECT la.*, u.name as user_name, l.name as lab_name
+                           FROM lab_access la
+                                    JOIN users u ON la.user_id = u.id
+                                    JOIN labs l ON la.lab_id = l.id
+                           WHERE la.lab_id = ?
+                             AND la.username = ?
+                             AND la.password_hash = ?
+                             AND la.is_active = TRUE
+                             AND DATE ('now') BETWEEN la.valid_from
+                             AND la.valid_until
+                           """, (lab_id, username, password_hash))
+
+            access = cursor.fetchone()
+            return dict(access) if access else None
+        except sqlite3.Error as e:
+            st.error(f"Error verifying access: {e}")
+            return None
+
+    @staticmethod
+    def get_user_lab_access(user_id: int, db: Database):
+        cursor = db.conn.cursor()
+        try:
+            cursor.execute("""
+                           SELECT la.*, l.name as lab_name, u.name as university_name
+                           FROM lab_access la
+                                    JOIN labs l ON la.lab_id = l.id
+                                    JOIN universities u ON l.university_id = u.id
+                           WHERE la.user_id = ?
+                             AND la.is_active = TRUE
+                           ORDER BY la.created_at DESC
+                           """, (user_id,))
+            return cursor.fetchall()
+        except sqlite3.Error as e:
+            st.error(f"Error getting lab access: {e}")
+            return []
+
+
+class ProjectManager:
+    @staticmethod
+    def get_user_projects(user_id: int, db: Database):
+        cursor = db.conn.cursor()
+        try:
+            cursor.execute("""
+                           SELECT p.*,
+                                  up.role,
+                                  up.status as participation_status,
+                                  up.joined_date,
+                                  up.completion_date,
+                                  up.rating_received,
+                                  up.payment_received,
+                                  up.contribution_description
+                           FROM projects p
+                                    JOIN user_projects up ON p.id = up.project_id
+                           WHERE up.user_id = ?
+                           ORDER BY up.joined_date DESC
+                           """, (user_id,))
+            return cursor.fetchall()
+        except sqlite3.Error as e:
+            st.error(f"Error getting user projects: {e}")
+            return []
+
+    @staticmethod
+    def apply_to_project(project_id: int, user_id: int, application_text: str,
+                         proposed_rate: int, proposed_kic_rate: int, db: Database) -> bool:
+        try:
+            cursor = db.conn.cursor()
+            cursor.execute("""
+                           INSERT INTO project_applications (project_id, user_id, application_text,
+                                                             proposed_rate, proposed_kic_rate)
+                           VALUES (?, ?, ?, ?, ?)
+                           """, (project_id, user_id, application_text, proposed_rate, proposed_kic_rate))
+
+            cursor.execute("""
+                           UPDATE projects
+                           SET applications = applications + 1
+                           WHERE id = ?
+                           """, (project_id,))
+
+            db.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+        except sqlite3.Error as e:
+            st.error(f"Error applying to project: {e}")
+            return False
+
+    @staticmethod
+    def get_project_applications(user_id: int, db: Database):
+        cursor = db.conn.cursor()
+        try:
+            cursor.execute("""
+                           SELECT pa.*, p.title, p.organization, p.kic_budget_min, p.kic_budget_max
+                           FROM project_applications pa
+                                    JOIN projects p ON pa.project_id = p.id
+                           WHERE pa.user_id = ?
+                           ORDER BY pa.applied_date DESC
+                           """, (user_id,))
+            return cursor.fetchall()
+        except sqlite3.Error as e:
+            st.error(f"Error getting applications: {e}")
+            return []
+
+
+# ==================== PAGES ====================
+def show_ultimate_login_page(db: Database):
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        st.markdown('''
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 class="gradient-text" style="font-size: 3.5rem; margin-bottom: 0.5rem;">
+                🔬 UAE Innovate Hub
+            </h1>
+            <p style="font-size: 1.3rem; color: #64748b; margin-bottom: 0.5rem;">
+                Knowledge & Innovation Connected
+            </p>
+            <p style="color: #94a3b8; font-size: 1.1rem;">
+                Connect • Collaborate • Create • Transform
+            </p>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        tab1, tab2 = st.tabs(["🔑 Sign In", "🚀 Join the Network"])
+
         with tab1:
+            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
+
+            # Demo accounts quick access
+            st.markdown("### 🎯 Quick Demo Access")
+            demo_accounts = [
+                ("ahmed.mansouri@example.com", "Robotics Engineer", "talent", "🤖"),
+                ("fatima.zaabi@example.com", "Data Scientist", "talent", "📊"),
+                ("sara.hassan@example.com", "Innovation Manager", "company", "🏢"),
+                ("mohammed.rashid@uaeu.ac.ae", "AI Professor", "researcher", "🎓")
+            ]
+
+            cols = st.columns(2)
+            for idx, (email, role, user_type, icon) in enumerate(demo_accounts):
+                with cols[idx % 2]:
+                    if st.button(f"{icon} {role}", key=f"demo_{email}", use_container_width=True):
+                        user = AuthManager.login(email, "password123", db)
+                        if user:
+                            st.session_state.user = user
+                            st.success(f"Welcome, {user['name']}! 🎉")
+                            st.balloons()
+                            st.rerun()
+
+            st.markdown("---")
+            st.markdown("### Or Sign In With Your Account")
+
             with st.form("login_form"):
-                email = st.text_input("Email", placeholder="your@email.com")
-                password = st.text_input("Password", type="password")
-                
+                email = st.text_input("Email", placeholder="your.name@company.com")
+                password = st.text_input("Password", type="password", value="password123")
+
                 col1, col2 = st.columns(2)
                 with col1:
-                    remember_me = st.checkbox("Remember me")
+                    remember_me = st.checkbox("Keep me signed in")
                 with col2:
-                    st.markdown('<a href="#" style="float: right; color: #667eea;">Forgot password?</a>', 
-                               unsafe_allow_html=True)
-                
-                if st.form_submit_button("Login", use_container_width=True):
+                    st.markdown('<a href="#" style="float: right; color: #0077b5;">Forgot password?</a>',
+                                unsafe_allow_html=True)
+
+                if st.form_submit_button("Sign In", use_container_width=True):
                     user = AuthManager.login(email, password, db)
                     if user:
                         st.session_state.user = user
-                        st.success("Welcome back!")
-                        st_rerun()
+                        st.success(f"Welcome back, {user['name']}! 🎉")
+                        st.rerun()
                     else:
-                        st.error("Invalid credentials")
-        
+                        st.error("Invalid credentials. Please try again.")
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
         with tab2:
+            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             with st.form("register_form"):
                 col1, col2 = st.columns(2)
                 with col1:
-                    name = st.text_input("Full Name")
-                    email = st.text_input("Email")
+                    name = st.text_input("Full Name *")
+                    email = st.text_input("Email *")
+                    phone = st.text_input("Phone *", placeholder="+971 50 123 4567")
+                    location = st.selectbox("Location",
+                                            ["Abu Dhabi", "Dubai", "Sharjah", "Ajman",
+                                             "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"])
+
                 with col2:
-                    password = st.text_input("Password", type="password")
-                    confirm_password = st.text_input("Confirm Password", type="password")
-                
-                user_type = st.selectbox("I am a", ["Company", "Talent", "University"])
-                organization = st.text_input("Organization/University")
-                
-                terms = st.checkbox("I agree to the Terms of Service and Privacy Policy")
-                
+                    password = st.text_input("Password *", type="password")
+                    confirm_password = st.text_input("Confirm Password *", type="password")
+                    user_type = st.selectbox("I'm joining as",
+                                             ["talent", "company", "researcher"])
+                    organization = st.text_input("Organization/University *")
+
+                st.markdown("#### What brings you here?")
+                interests = st.multiselect("Select your interests:",
+                                           ["Find talented professionals", "Discover research opportunities",
+                                            "Access testing facilities", "Collaborate on projects",
+                                            "Share knowledge", "Build professional network",
+                                            "Find investment opportunities", "Learn new skills"])
+
+                terms = st.checkbox("I agree to the Terms of Service and Privacy Policy *")
+
                 if st.form_submit_button("Create Account", use_container_width=True):
                     if password != confirm_password:
                         st.error("Passwords don't match")
                     elif not terms:
                         st.error("Please accept the terms")
+                    elif not all([name, email, password, organization, phone]):
+                        st.error("Please fill in all required fields")
                     else:
-                        success = AuthManager.register(email, password, name, 
-                                                     user_type.lower(), organization, db)
+                        success = AuthManager.register(email, password, name, user_type,
+                                                       organization, location, phone, db)
                         if success:
-                            st.success("Account created! Please login.")
+                            st.success("🎉 Welcome to UAE Innovate Hub! Please sign in.")
+                            st.balloons()
                         else:
-                            st.error("Email already exists")
-        
-        # Авторство в футере страницы логина
+                            st.error("Email already exists. Please try signing in.")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Database management
         st.markdown("---")
-        st.markdown('''
-        <div style="text-align: center; color: rgba(255,255,255,0.4); margin-top: 3rem;">
-            <p>Developed with ❤️ by <strong>Alisher Beisembekov</strong></p>
-            <p style="font-size: 0.8rem;">UAE Innovate Hub © 2025</p>
+        with st.expander("🔧 Database Management"):
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🗑️ Reset Database", type="secondary", use_container_width=True):
+                    db.reset_database()
+                    db.seed_comprehensive_data()
+                    st.success("Database reset successfully!")
+                    st.rerun()
+            with col2:
+                if st.button("🌱 Reseed Data", use_container_width=True):
+                    db.seed_comprehensive_data()
+                    st.success("Data reseeded successfully!")
+
+
+def show_ultimate_dashboard(db: Database):
+    user = st.session_state.user
+
+    # Welcome header
+    st.markdown(f'''
+    <div style="margin-bottom: 2rem;">
+        <h1 class="gradient-text">Welcome back, {user['name']}! 👋</h1>
+        <p style="font-size: 1.1rem; color: #64748b;">
+            {user['user_type'].title()} at {user['organization']} • 
+            {user['total_projects_completed']} projects completed • 
+            <span class="kic-balance">💰 {user['kic_balance']} KIC</span>
+        </p>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    # Get notifications count
+    cursor = db.conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = FALSE", (user['id'],))
+    unread_notifications = cursor.fetchone()[0]
+
+    # Metrics row
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+
+    with col1:
+        cursor.execute("SELECT COUNT(*) FROM users WHERE user_type = 'talent'")
+        talent_count = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{talent_count}+</div>
+            <div style="color: #64748b; font-weight: 600;">Talents</div>
         </div>
         ''', unsafe_allow_html=True)
 
-def show_dashboard(db: Database):
-    """Главная страница - дашборд"""
-    
-    st.markdown('<h1 class="gradient-text">Welcome to UAE Innovate Hub</h1>', unsafe_allow_html=True)
-    
-    # Метрики
-    col1, col2, col3, col4 = st.columns(4)
-    
-    cursor = db.conn.cursor()
-    
-    with col1:
+    with col2:
+        cursor.execute("SELECT COUNT(*) FROM companies")
+        company_count = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{company_count}+</div>
+            <div style="color: #64748b; font-weight: 600;">Companies</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col3:
+        cursor.execute("SELECT COUNT(*) FROM projects WHERE status = 'Active'")
+        active_projects = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{active_projects}</div>
+            <div style="color: #64748b; font-weight: 600;">Active Projects</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col4:
         cursor.execute("SELECT COUNT(*) FROM labs")
         lab_count = cursor.fetchone()[0]
         st.markdown(f'''
         <div class="metric-card">
             <div class="metric-value">{lab_count}+</div>
-            <div class="metric-label">Testing Labs</div>
+            <div style="color: #64748b; font-weight: 600;">Research Labs</div>
         </div>
         ''', unsafe_allow_html=True)
-    
-    with col2:
-        cursor.execute("SELECT COUNT(*) FROM talents")
-        talent_count = cursor.fetchone()[0]
+
+    with col5:
+        cursor.execute("SELECT COUNT(*) FROM universities")
+        uni_count = cursor.fetchone()[0]
         st.markdown(f'''
         <div class="metric-card">
-            <div class="metric-value">{talent_count}+</div>
-            <div class="metric-label">Talents</div>
+            <div class="metric-value">{uni_count}</div>
+            <div style="color: #64748b; font-weight: 600;">Universities</div>
         </div>
         ''', unsafe_allow_html=True)
-    
-    with col3:
-        cursor.execute("SELECT COUNT(*) FROM projects WHERE status = 'Active'")
-        project_count = cursor.fetchone()[0]
+
+    with col6:
+        cursor.execute("""
+                       SELECT COUNT(*)
+                       FROM connections
+                       WHERE (requester_id = ? OR addressee_id = ?)
+                         AND status = 'accepted'
+                       """, (user['id'], user['id']))
+        network_size = cursor.fetchone()[0]
         st.markdown(f'''
         <div class="metric-card">
-            <div class="metric-value">{project_count}</div>
-            <div class="metric-label">Active Projects</div>
+            <div class="metric-value">{network_size}</div>
+            <div style="color: #64748b; font-weight: 600;">My Network</div>
         </div>
         ''', unsafe_allow_html=True)
-    
-    with col4:
-        cursor.execute("SELECT COUNT(*) FROM bookings WHERE status = 'Confirmed'")
-        booking_count = cursor.fetchone()[0]
-        st.markdown(f'''
-        <div class="metric-card">
-            <div class="metric-value">{booking_count}</div>
-            <div class="metric-label">Bookings</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
+
     st.markdown("---")
-    
-    # Графики
-    col1, col2 = st.columns(2)
-    
+
+    # Main content
+    col1, col2 = st.columns([2, 1])
+
     with col1:
-        st.markdown("### 📊 Booking Trends")
-        # Создаем данные для графика
-        dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
-        bookings = [5 + i//3 + (i%7)*2 for i in range(30)]
-        
-        fig = px.line(x=dates, y=bookings, 
-                     labels={'x': 'Date', 'y': 'Bookings'},
-                     line_shape='spline')
-        fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font_color='white',
-            showlegend=False,
-            height=300
-        )
-        fig.update_traces(line_color='#667eea', line_width=3)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        st.markdown("### 🏢 Labs by Category")
-        cursor.execute("SELECT specialty, COUNT(*) as count FROM labs GROUP BY specialty")
-        lab_stats = cursor.fetchall()
-        
-        if lab_stats:
-            categories = [row['specialty'] for row in lab_stats]
-            counts = [row['count'] for row in lab_stats]
-            
-            fig = px.pie(values=counts, names=categories, hole=0.6)
-            fig.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_color='white',
-                showlegend=True,
-                height=300
-            )
-            fig.update_traces(marker=dict(colors=['#667eea', '#764ba2', '#e73c7e', '#23a6d5']))
-            st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # Последние активности
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### 🔔 Recent Activities")
-        activities = [
-            ("New lab added", "Khalifa University AI Lab", "2 hours ago", "🏢"),
-            ("Project posted", "Smart City Sensor Development", "5 hours ago", "📋"),
-            ("Talent joined", "Dr. Sarah Ahmed - IoT Expert", "1 day ago", "👤"),
-            ("Booking confirmed", "Drone Testing Zone - 3 days", "2 days ago", "✅"),
-        ]
-        
-        for activity in activities:
+        # Notifications
+        if unread_notifications > 0:
             st.markdown(f'''
-            <div class="glass-card" style="padding: 1rem;">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1.5rem; margin-right: 1rem;">{activity[3]}</span>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold;">{activity[0]}</div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">{activity[1]}</div>
-                    </div>
-                    <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">{activity[2]}</div>
-                </div>
-            </div>
-            ''', unsafe_allow_html=True)
-    
-    # Футер с авторством
-    st.markdown("---")
-    st.markdown('''
-    <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem 0;">
-        <p>UAE Innovate Hub © 2024 | Developed by <strong>Alisher Beisembekov</strong></p>
-        <p style="font-size: 0.9rem;">Connecting UAE's innovation ecosystem</p>
-    </div>
-    ''', unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("### 🌟 Featured Labs")
-        cursor.execute("SELECT * FROM labs ORDER BY rating DESC LIMIT 3")
-        featured_labs = cursor.fetchall()
-        
-        for lab in featured_labs:
-            st.markdown(f'''
-            <div class="glass-card" style="padding: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: bold;">{lab['name']}</div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">{lab['location']}</div>
-                    </div>
-                    <div>{create_rating_stars(lab['rating'])}</div>
-                </div>
-                <div style="margin-top: 0.5rem;">
-                    <span class="skill-tag">{lab['specialty']}</span>
-                    <span style="color: #22c55e; margin-left: 1rem;">AED {lab['price_per_day']}/day</span>
-                </div>
+            <div class="modern-card" style="border-left: 4px solid #f59e0b; background: rgba(251, 191, 36, 0.05);">
+                <h4>🔔 You have {unread_notifications} new notifications</h4>
             </div>
             ''', unsafe_allow_html=True)
 
-def show_labs_page(db: Database):
-    """Страница лабораторий"""
-    
-    st.markdown('<h1 class="gradient-text">Testing Laboratories</h1>', unsafe_allow_html=True)
-    
-    # Поиск и фильтры
-    col1, col2, col3 = st.columns([3, 1, 1])
-    
-    with col1:
-        search_query = st.text_input("🔍 Search labs...", placeholder="Search by name, location, or specialty")
-    
-    with col2:
-        sort_by = st.selectbox("Sort by", ["Rating", "Price", "Name", "Availability"])
-    
-    with col3:
-        view_mode = st.radio("View", ["Grid", "List"], horizontal=True)
-    
-    # Фильтры в сайдбаре
-    with st.sidebar:
-        st.markdown("### 🔧 Filters")
-        
-        # Специальности
-        cursor = db.conn.cursor()
-        cursor.execute("SELECT DISTINCT specialty FROM labs")
-        specialties = [row[0] for row in cursor.fetchall()]
-        selected_specialties = st.multiselect("Specialty", specialties)
-        
-        # Локации
-        cursor.execute("SELECT DISTINCT location FROM labs")
-        locations = [row[0] for row in cursor.fetchall()]
-        selected_locations = st.multiselect("Location", locations)
-        
-        # Ценовой диапазон
-        price_range = st.slider("Price per day (AED)", 0, 5000, (0, 5000))
-        
-        # Рейтинг
-        min_rating = st.slider("Minimum rating", 0.0, 5.0, 0.0, 0.5)
-        
-        # Доступность
-        availability = st.date_input("Available from", datetime.now())
-        
-        # Информация об авторе в сайдбаре
-        st.markdown("---")
-        st.markdown('''
-        <div style="text-align: center; color: rgba(255,255,255,0.5); font-size: 0.8rem;">
-            <p>Developed by<br><strong>Alisher Beisembekov</strong></p>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    # Построение SQL запроса
-    query = "SELECT * FROM labs WHERE 1=1"
-    params = []
-    
-    if search_query:
-        query += " AND (name LIKE ? OR description LIKE ? OR equipment LIKE ?)"
-        search_param = f"%{search_query}%"
-        params.extend([search_param, search_param, search_param])
-    
-    if selected_specialties:
-        query += f" AND specialty IN ({','.join(['?']*len(selected_specialties))})"
-        params.extend(selected_specialties)
-    
-    if selected_locations:
-        query += f" AND location IN ({','.join(['?']*len(selected_locations))})"
-        params.extend(selected_locations)
-    
-    query += " AND price_per_day BETWEEN ? AND ?"
-    params.extend([price_range[0], price_range[1]])
-    
-    query += " AND rating >= ?"
-    params.append(min_rating)
-    
-    # Сортировка
-    if sort_by == "Rating":
-        query += " ORDER BY rating DESC"
-    elif sort_by == "Price":
-        query += " ORDER BY price_per_day ASC"
-    elif sort_by == "Name":
-        query += " ORDER BY name ASC"
-    else:
-        query += " ORDER BY available_from ASC"
-    
-    cursor.execute(query, params)
-    labs = cursor.fetchall()
-    
-    # Отображение результатов
-    st.markdown(f"### Found {len(labs)} labs")
-    
-    if view_mode == "Grid":
-        cols = st.columns(3)
-        for idx, lab in enumerate(labs):
-            with cols[idx % 3]:
+        # My Active Projects
+        st.markdown("### 📋 My Active Projects")
+        user_projects = ProjectManager.get_user_projects(user['id'], db)
+        active_projects = [p for p in user_projects if p['participation_status'] == 'active']
+
+        if active_projects:
+            for project in active_projects[:3]:
+                urgency_class = f"urgency-{project['urgency'].lower()}"
                 st.markdown(f'''
-                <div class="glass-card">
-                    <h4>{lab['name']}</h4>
-                    <p style="color: rgba(255,255,255,0.7);">{lab['university']}</p>
-                    <p>📍 {lab['location']}</p>
-                    <div style="margin: 1rem 0;">
-                        <span class="skill-tag">{lab['specialty']}</span>
+                <div class="project-card">
+                    <h4>{project['title']}</h4>
+                    <div style="color: #0077b5; font-weight: 600;">
+                        Role: {project['role'].replace('_', ' ').title()}
+                    </div>
+                    <div style="color: #64748b; margin: 0.5rem 0;">
+                        📍 {project['location']} • 
+                        <span class="{urgency_class}">⚡ {project['urgency']} Priority</span> •
+                        📅 Joined: {project['joined_date']}
+                    </div>
+                    <div style="color: #475569; margin-bottom: 1rem;">
+                        {project['description'][:150]}...
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>{create_rating_stars(lab['rating'])}</span>
-                        <span style="color: #22c55e;">AED {lab['price_per_day']}/day</span>
+                        <div style="color: #16a34a; font-weight: bold;">
+                            💰 {project['kic_budget_min']:,} - {project['kic_budget_max']:,} KIC
+                        </div>
+                        <button class="professional-btn" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                            View Details
+                        </button>
                     </div>
-                    <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin: 1rem 0;">
-                        {lab['description'][:100]}...
-                    </p>
                 </div>
                 ''', unsafe_allow_html=True)
-                
-                if st.button("View Details", key=f"lab_{lab['id']}"):
-                    st.session_state.selected_lab_id = lab['id']
-                    st_rerun()
-    else:
-        # List view
-        for lab in labs:
-            col1, col2, col3 = st.columns([3, 1, 1])
-            
-            with col1:
+        else:
+            st.info("No active projects. Browse available projects to get started!")
+
+        # Activity Feed
+        st.markdown("### 📈 Network Activity")
+        cursor.execute("""
+                       SELECT a.*, u.name, u.user_type
+                       FROM activities a
+                                JOIN users u ON a.user_id = u.id
+                       ORDER BY a.created_at DESC LIMIT 10
+                       """)
+        activities = cursor.fetchall()
+
+        for activity in activities:
+            icon_map = {
+                "project_completed": "✅",
+                "skill_certified": "🎓",
+                "connection_made": "🤝",
+                "project_started": "🚀",
+                "lab_booking": "🔬",
+                "university_project": "🎓"
+            }
+
+            icon = icon_map.get(activity['activity_type'], "📋")
+
+            st.markdown(f'''
+            <div class="activity-item">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span style="font-size: 1.5rem;">{icon}</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: #1e293b;">{activity['name']}</div>
+                        <div style="color: #0077b5; font-weight: 500;">{activity['title']}</div>
+                        <div style="color: #64748b; font-size: 0.9rem;">{activity['description']}</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 0.8rem;">
+                        {activity['created_at'][:10]}
+                    </div>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+        # Trending Projects
+        st.markdown("### 🔥 Trending Projects")
+        cursor.execute("""
+                       SELECT *
+                       FROM projects
+                       WHERE status = 'Active'
+                       ORDER BY views DESC, applications DESC LIMIT 3
+                       """)
+        trending_projects = cursor.fetchall()
+
+        for project in trending_projects:
+            urgency_class = f"urgency-{project['urgency'].lower()}"
+
+            st.markdown(f'''
+            <div class="modern-card">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h4 style="margin-bottom: 0.5rem;">{project['title']}</h4>
+                        <div style="color: #0077b5; font-weight: 600; margin-bottom: 0.5rem;">
+                            {project['organization']}
+                        </div>
+                        <div style="color: #64748b; margin-bottom: 1rem;">
+                            📍 {project['location']} • 
+                            <span class="{urgency_class}">⚡ {project['urgency']} Priority</span> •
+                            👁️ {project['views']} views • 
+                            📝 {project['applications']} applications
+                        </div>
+                        <div style="color: #475569;">
+                            {project['description'][:120]}...
+                        </div>
+                    </div>
+                    <div style="text-align: right; margin-left: 1rem;">
+                        <div style="color: #16a34a; font-weight: bold; font-size: 1.1rem;">
+                            💰 {project['kic_budget_min']:,} - {project['kic_budget_max']:,} KIC
+                        </div>
+                        <div style="color: #64748b; font-size: 0.9rem;">
+                            AED {project['budget_min']:,} - {project['budget_max']:,}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+    with col2:
+        # Personal Profile Card
+        st.markdown(f'''
+        <div class="profile-card">
+            <div class="profile-avatar">{user['name'][0].upper()}</div>
+            <h3 style="margin-bottom: 0.5rem;">{user['name']}</h3>
+            <div style="opacity: 0.9; margin-bottom: 1rem;">{user['organization']}</div>
+            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 8px; margin-bottom: 1rem;">
+                <div style="font-size: 0.9rem; opacity: 0.8;">Reputation Score</div>
+                <div style="font-size: 1.5rem; font-weight: bold;">{user['reputation_score']}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 8px;">
+                <div style="font-size: 0.9rem; opacity: 0.8;">Projects Completed</div>
+                <div style="font-size: 1.5rem; font-weight: bold;">{user['total_projects_completed']}</div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        # KIC Balance and Recent Transactions
+        st.markdown("### 💰 KIC Wallet")
+
+        kic_transactions = KICManager.get_kic_transactions(user['id'], db, 5)
+
+        st.markdown(f'''
+        <div class="modern-card">
+            <div style="text-align: center; margin-bottom: 1rem;">
+                <div style="font-size: 2rem; font-weight: bold; color: #f59e0b;">
+                    {user['kic_balance']} KIC
+                </div>
+                <div style="color: #64748b;">Available Balance</div>
+            </div>
+        ''', unsafe_allow_html=True)
+
+        if kic_transactions:
+            st.markdown("**Recent Transactions:**")
+            for txn in kic_transactions:
+                color = "#16a34a" if txn['amount'] > 0 else "#dc2626"
+                sign = "+" if txn['amount'] > 0 else ""
+
                 st.markdown(f'''
-                <div class="glass-card">
-                    <h4>{lab['name']}</h4>
-                    <p style="color: rgba(255,255,255,0.7);">{lab['university']} • {lab['location']}</p>
-                    <p style="color: rgba(255,255,255,0.6);">{lab['description']}</p>
-                    <div style="margin-top: 0.5rem;">
-                        {' '.join([f'<span class="skill-tag">{eq}</span>' for eq in lab['equipment'].split(',')[:3]])}
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e2e8f0;">
+                    <div>
+                        <div style="font-size: 0.9rem; font-weight: 500;">{txn['transaction_type'].title()}</div>
+                        <div style="font-size: 0.8rem; color: #64748b;">{txn['description']}</div>
+                    </div>
+                    <div style="color: {color}; font-weight: bold;">
+                        {sign}{txn['amount']} KIC
                     </div>
                 </div>
                 ''', unsafe_allow_html=True)
-            
-            with col2:
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Quick Actions
+        st.markdown("### ⚡ Quick Actions")
+
+        actions = [
+            ("💬 Messages", "Messages", unread_notifications > 0),
+            ("🔍 Find Talent", "Talents", False),
+            ("📋 Browse Projects", "Projects", False),
+            ("🏢 Explore Labs", "Labs", False),
+            ("🎓 Universities", "Universities", False),
+            ("💰 KIC Hub", "KIC Hub", False)
+        ]
+
+        for label, page, has_notification in actions:
+            col = st.container()
+            if col.button(label, use_container_width=True, key=f"qa_{page}"):
+                st.session_state.current_page = page
+                st.rerun()
+            if has_notification:
                 st.markdown(f'''
-                <div style="text-align: center; padding: 1rem;">
-                    <div>{create_rating_stars(lab['rating'])}</div>
-                    <div style="color: #22c55e; font-size: 1.2rem; margin-top: 0.5rem;">
-                        AED {lab['price_per_day']}/day
-                    </div>
+                <div style="position: relative; margin-top: -2.5rem; margin-bottom: 0.5rem;">
+                    <span class="notification-badge" style="position: absolute; right: 10px;">
+                        {unread_notifications}
+                    </span>
                 </div>
                 ''', unsafe_allow_html=True)
-            
-            with col3:
-                if st.button("Book Now", key=f"book_lab_{lab['id']}", use_container_width=True):
-                    st.session_state.booking_lab_id = lab['id']
-                    st_rerun()
+
 
 def show_talents_page(db: Database):
-    """Страница талантов"""
-    
-    st.markdown('<h1 class="gradient-text">Talent Pool</h1>', unsafe_allow_html=True)
-    
-    # Статистика талантов
-    col1, col2, col3, col4 = st.columns(4)
-    cursor = db.conn.cursor()
-    
+    st.markdown('<h1 class="gradient-text">👥 Talent Network</h1>', unsafe_allow_html=True)
+    st.markdown("Connect with UAE's top innovators, researchers, and industry experts")
+
+    # Search and filters
+    col1, col2, col3 = st.columns([3, 1, 1])
+
     with col1:
-        cursor.execute("SELECT COUNT(*) FROM talents")
-        total_talents = cursor.fetchone()[0]
-        st.markdown(f'''
-        <div class="metric-card">
-            <div class="metric-value">{total_talents}</div>
-            <div class="metric-label">Total Talents</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
+        search_query = st.text_input("🔍 Search talents...",
+                                     placeholder="Search by name, skills, title, or expertise")
+
     with col2:
-        cursor.execute("SELECT AVG(rating) FROM talents")
-        avg_rating = cursor.fetchone()[0] or 0
-        st.markdown(f'''
-        <div class="metric-card">
-            <div class="metric-value">{avg_rating:.1f}⭐</div>
-            <div class="metric-label">Average Rating</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
+        sort_option = st.selectbox("Sort by",
+                                   ["Best Match", "Reputation Score", "Project Count",
+                                    "Rating", "Recently Active"])
+
     with col3:
-        cursor.execute("SELECT COUNT(DISTINCT skills) FROM talents")
-        skill_count = 50  # Примерное количество уникальных навыков
-        st.markdown(f'''
-        <div class="metric-card">
-            <div class="metric-value">{skill_count}+</div>
-            <div class="metric-label">Skills Covered</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col4:
-        cursor.execute("SELECT AVG(hourly_rate) FROM talents")
-        avg_rate = cursor.fetchone()[0] or 0
-        st.markdown(f'''
-        <div class="metric-card">
-            <div class="metric-value">{int(avg_rate)} AED</div>
-            <div class="metric-label">Avg. Hourly Rate</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Поиск и фильтры
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        search_query = st.text_input("🔍 Search talents...", 
-                                    placeholder="Search by name, skills, title, or expertise")
-    
-    with col2:
-        sort_option = st.selectbox("Sort by", 
-                                  ["Best Match", "Rating", "Hourly Rate (Low to High)", 
-                                   "Hourly Rate (High to Low)", "Experience"])
-    
-    # Расширенные фильтры
-    with st.expander("🔧 Advanced Filters", expanded=True):
+        view_mode = st.radio("View", ["Professional", "Compact"], horizontal=True)
+
+    # Advanced filters
+    with st.expander("🔧 Advanced Filters", expanded=False):
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
-            # Навыки
-            cursor.execute("SELECT DISTINCT skills FROM talents")
-            all_skills = []
-            for row in cursor.fetchall():
-                all_skills.extend([s.strip() for s in row[0].split(',')])
-            unique_skills = sorted(list(set(all_skills)))[:20]  # Топ-20 навыков
-            
-            selected_skills = st.multiselect("Skills", unique_skills)
-        
-        with col2:
-            # Локации
+            cursor = db.conn.cursor()
             cursor.execute("SELECT DISTINCT location FROM talents")
             locations = [row[0] for row in cursor.fetchall()]
             selected_locations = st.multiselect("Locations", locations)
-        
-        with col3:
-            # Доступность
+
+        with col2:
             availability_options = ["Full-time", "Part-time", "Contract", "Remote"]
             selected_availability = st.multiselect("Availability", availability_options)
-        
+
+        with col3:
+            rate_range = st.slider("KIC Hourly rate", 0, 500, (0, 500))
+
         with col4:
-            # Ценовой диапазон
-            rate_range = st.slider("Hourly rate (AED)", 0, 500, (0, 500))
-            
-            # Минимальный рейтинг
-            min_rating = st.slider("Min. rating", 0.0, 5.0, 0.0, 0.5)
-    
-    # Построение запроса
+            min_projects = st.slider("Min. projects completed", 0, 50, 0)
+
+    # Fetch talents
     query = """
-    SELECT t.*, u.name, u.email 
-    FROM talents t 
-    JOIN users u ON t.user_id = u.id 
-    WHERE 1=1
-    """
+            SELECT t.*, \
+                   u.name, \
+                   u.email, \
+                   u.location as user_location, \
+                   u.is_verified,
+                   u.reputation_score, \
+                   u.total_projects_completed, \
+                   u.phone
+            FROM talents t
+                     JOIN users u ON t.user_id = u.id
+            WHERE 1 = 1 \
+            """
     params = []
-    
+
     if search_query:
         query += " AND (u.name LIKE ? OR t.title LIKE ? OR t.skills LIKE ? OR t.bio LIKE ?)"
         search_param = f"%{search_query}%"
         params.extend([search_param] * 4)
-    
-    if selected_skills:
-        skill_conditions = " OR ".join(["t.skills LIKE ?" for _ in selected_skills])
-        query += f" AND ({skill_conditions})"
-        params.extend([f"%{skill}%" for skill in selected_skills])
-    
+
     if selected_locations:
-        query += f" AND t.location IN ({','.join(['?']*len(selected_locations))})"
+        query += f" AND t.location IN ({','.join(['?'] * len(selected_locations))})"
         params.extend(selected_locations)
-    
+
     if selected_availability:
-        query += f" AND t.availability IN ({','.join(['?']*len(selected_availability))})"
+        query += f" AND t.availability IN ({','.join(['?'] * len(selected_availability))})"
         params.extend(selected_availability)
-    
-    query += " AND t.hourly_rate BETWEEN ? AND ?"
+
+    query += " AND t.kic_hourly_rate BETWEEN ? AND ?"
     params.extend([rate_range[0], rate_range[1]])
-    
-    query += " AND t.rating >= ?"
-    params.append(min_rating)
-    
-    # Сортировка
-    if sort_option == "Rating":
+
+    query += " AND u.total_projects_completed >= ?"
+    params.append(min_projects)
+
+    # Sorting
+    if sort_option == "Reputation Score":
+        query += " ORDER BY u.reputation_score DESC"
+    elif sort_option == "Project Count":
+        query += " ORDER BY u.total_projects_completed DESC"
+    elif sort_option == "Rating":
         query += " ORDER BY t.rating DESC"
-    elif sort_option == "Hourly Rate (Low to High)":
-        query += " ORDER BY t.hourly_rate ASC"
-    elif sort_option == "Hourly Rate (High to Low)":
-        query += " ORDER BY t.hourly_rate DESC"
-    elif sort_option == "Experience":
-        query += " ORDER BY t.experience DESC"
-    else:  # Best Match
-        query += " ORDER BY t.rating DESC, t.hourly_rate ASC"
-    
+    else:
+        query += " ORDER BY u.is_verified DESC, u.reputation_score DESC"
+
     cursor.execute(query, params)
     talents = cursor.fetchall()
-    
-    # Отображение результатов
-    st.markdown(f"### Found {len(talents)} talents")
-    
-    # Переключатель вида
-    view_mode = st.radio("View as:", ["Cards", "List", "Compact"], horizontal=True)
-    
-    if view_mode == "Cards":
-        # Карточки талантов (по 2 в ряд)
-        for i in range(0, len(talents), 2):
-            col1, col2 = st.columns(2)
-            
-            for idx, col in enumerate([col1, col2]):
-                if i + idx < len(talents):
-                    talent = talents[i + idx]
-                    with col:
-                        st.markdown(f'''
-                        <div class="glass-card">
-                            <div style="display: flex; align-items: start;">
-                                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea, #764ba2); 
-                                            border-radius: 50%; margin-right: 1rem; flex-shrink: 0;">
-                                    <div style="text-align: center; line-height: 80px; font-size: 2rem; font-weight: bold;">
-                                        {talent['name'][0].upper()}
-                                    </div>
-                                </div>
-                                <div style="flex: 1;">
-                                    <h4>{talent['name']}</h4>
-                                    <p style="color: #667eea; font-weight: 600;">{talent['title']}</p>
-                                    <p>📍 {talent['location']} • {talent['experience']} • {talent['education']}</p>
-                                    <p style="color: rgba(255,255,255,0.7); margin: 0.5rem 0; font-size: 0.9rem;">
-                                        {talent['bio'][:150]}{'...' if len(talent['bio']) > 150 else ''}
-                                    </p>
-                                    <div style="margin: 0.5rem 0;">
-                                        {' '.join([f'<span class="skill-tag">{skill.strip()}</span>' 
-                                                 for skill in talent['skills'].split(',')[:5]])}
-                                        {f'<span class="skill-tag">+{len(talent["skills"].split(",")) - 5} more</span>' 
-                                         if len(talent["skills"].split(",")) > 5 else ''}
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-                                        <div>
-                                            {create_rating_stars(talent['rating'])}
-                                            <span style="color: #22c55e; margin-left: 1rem;">AED {talent['hourly_rate']}/hr</span>
-                                        </div>
-                                        <span class="status-badge status-active">{talent['availability']}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                        
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            if st.button("View Profile", key=f"view_talent_{talent['id']}"):
-                                st.session_state.selected_talent_id = talent['id']
-                                st.experimental_rerun()
-                        with col_b:
-                            if st.button("Quick Contact", key=f"contact_talent_{talent['id']}"):
-                                st.session_state.contact_talent_id = talent['id']
-                                st.experimental_rerun()
-    
-    elif view_mode == "List":
-        # Детальный список
+
+    st.markdown(f"### Found {len(talents)} talented professionals")
+
+    # Display talents
+    if view_mode == "Professional":
         for talent in talents:
             st.markdown(f'''
-            <div class="glass-card">
-                <div style="display: flex; gap: 2rem;">
-                    <div style="flex: 1;">
-                        <h3>{talent['name']} - {talent['title']}</h3>
-                        <p>📍 {talent['location']} • 📚 {talent['education']} • 💼 {talent['experience']} experience</p>
-                        <p style="color: rgba(255,255,255,0.8);">{talent['bio']}</p>
-                        <div style="margin: 1rem 0;">
-                            <strong>Skills:</strong> {talent['skills']}
+            <div class="modern-card">
+                <div style="display: flex; gap: 1.5rem;">
+                    <div style="flex-shrink: 0;">
+                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #0077b5, #00a0dc); 
+                                    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                                    color: white; font-size: 1.8rem; font-weight: bold;">
+                            {talent['name'][0].upper()}
                         </div>
-                        {f'<div><strong>Portfolio:</strong> <a href="{talent["portfolio_url"]}" style="color: #667eea;">{talent["portfolio_url"]}</a></div>' 
-                         if talent.get('portfolio_url') else ''}
-                        {f'<div><strong>LinkedIn:</strong> <a href="{talent["linkedin_url"]}" style="color: #667eea;">{talent["linkedin_url"]}</a></div>' 
-                         if talent.get('linkedin_url') else ''}
                     </div>
-                    <div style="text-align: center; min-width: 200px;">
-                        <div>{create_rating_stars(talent['rating'])}</div>
-                        <div style="color: #22c55e; font-size: 1.5rem; margin: 1rem 0;">
-                            AED {talent['hourly_rate']}/hour
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <h3 style="margin: 0;">{talent['name']}</h3>
+                            {f'<span class="status-badge status-verified">✓ Verified</span>' if talent['is_verified'] else ''}
+                            <span class="status-badge status-online">🟢 Active</span>
+                        </div>
+                        <div style="color: #0077b5; font-weight: 600; margin-bottom: 0.5rem;">
+                            {talent['title']}
+                        </div>
+                        <div style="color: #64748b; margin-bottom: 1rem;">
+                            📍 {talent['location']} • 💼 {talent['experience']} • 
+                            🎓 {talent['education']} • 
+                            📊 {talent['reputation_score']} reputation • 
+                            ✅ {talent['total_projects_completed']} projects completed
+                        </div>
+                        <div style="color: #475569; margin-bottom: 1rem;">
+                            {talent['bio'][:200]}{'...' if len(talent['bio']) > 200 else ''}
                         </div>
                         <div style="margin-bottom: 1rem;">
-                            <span class="status-badge status-active">{talent['availability']}</span>
+                            {' '.join([f'<span class="skill-tag">{skill.strip()}</span>'
+                                       for skill in talent['skills'].split(',')[:6]])}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="color: #16a34a; font-weight: bold; font-size: 1.1rem;">
+                                    💰 {talent['kic_hourly_rate']} KIC/hr
+                                </span>
+                                <span style="color: #64748b; margin-left: 1rem;">
+                                    AED {talent['hourly_rate']}/hr
+                                </span>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <span class="status-badge status-featured">{talent['availability']}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             ''', unsafe_allow_html=True)
-            
-            col1, col2, col3 = st.columns([1, 1, 3])
+
+            # Action buttons
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
-                if st.button("Full Profile", key=f"full_profile_{talent['id']}"):
+                if st.button("👤 View Profile", key=f"view_{talent['id']}"):
                     st.session_state.selected_talent_id = talent['id']
-                    st.experimental_rerun()
+                    st.session_state.current_page = "Talent Profile"
+                    st.rerun()
             with col2:
-                if st.button("Contact Now", key=f"contact_now_{talent['id']}"):
-                    st.session_state.contact_talent_id = talent['id']
-                    st.experimental_rerun()
-    
+                if st.button("🤝 Connect", key=f"connect_{talent['id']}"):
+                    st.session_state.connect_talent_id = talent['id']
+                    st.rerun()
+            with col3:
+                if st.button("💬 Message", key=f"message_{talent['id']}"):
+                    st.session_state.message_talent_id = talent['id']
+                    st.session_state.current_page = "Messages"
+                    st.rerun()
+            with col4:
+                if st.button("💼 Hire", key=f"hire_{talent['id']}"):
+                    st.session_state.hire_talent_id = talent['id']
+                    st.rerun()
+
     else:  # Compact view
-        # Компактная таблица
         for talent in talents:
             col1, col2, col3, col4, col5 = st.columns([3, 2, 1, 1, 1])
-            
+
             with col1:
-                st.markdown(f"**{talent['name']}**  \n{talent['title']}")
+                verified_badge = "✓" if talent['is_verified'] else ""
+                st.markdown(f"**{talent['name']} {verified_badge}**  \n{talent['title']}")
             with col2:
                 st.markdown(f"{talent['location']} • {talent['availability']}")
             with col3:
-                st.markdown(create_rating_stars(talent['rating']))
+                st.markdown(f"**{talent['total_projects_completed']}** projects")
             with col4:
-                st.markdown(f"**AED {talent['hourly_rate']}/hr**")
+                st.markdown(f"**{talent['kic_hourly_rate']} KIC**/hr")
             with col5:
-                if st.button("→", key=f"compact_view_{talent['id']}"):
+                if st.button("→", key=f"compact_{talent['id']}"):
                     st.session_state.selected_talent_id = talent['id']
-                    st.experimental_rerun()
+                    st.session_state.current_page = "Talent Profile"
+                    st.rerun()
 
-def show_projects_page(db: Database):
-    """Страница проектов"""
-    
-    st.markdown('<h1 class="gradient-text">Projects & Collaborations</h1>', unsafe_allow_html=True)
-    
-    # Кнопка создания проекта
-    col1, col2 = st.columns([3, 1])
-    with col2:
-        if st.button("➕ Post New Project", use_container_width=True):
-            st.session_state.show_new_project_form = True
-            st.experimental_rerun()
-    
-    # Табы
-    tab1, tab2, tab3 = st.tabs(["🔥 Active Projects", "⏳ Pending", "✅ Completed"])
-    
-    with tab1:
-        show_projects_by_status(db, "Active")
-    
-    with tab2:
-        show_projects_by_status(db, "Pending")
-    
-    with tab3:
-        show_projects_by_status(db, "Completed")
 
-def show_projects_by_status(db: Database, status: str):
-    """Отображение проектов по статусу"""
-    
+def show_companies_page(db: Database):
+    st.markdown('<h1 class="gradient-text">🏢 Partner Companies</h1>', unsafe_allow_html=True)
+    st.markdown("Discover innovative companies driving UAE's future")
+
     cursor = db.conn.cursor()
-    cursor.execute("""
-        SELECT *, julianday(deadline) - julianday('now') as days_left 
-        FROM projects 
-        WHERE status = ? 
-        ORDER BY posted DESC
-    """, (status,))
-    projects = cursor.fetchall()
-    
-    if not projects:
-        st.info(f"No {status.lower()} projects at the moment.")
-        return
-    
-    for project in projects:
-        days_left = int(project['days_left']) if project['days_left'] else 0
-        deadline_color = "#ef4444" if days_left < 7 else "#fbbf24" if days_left < 30 else "#22c55e"
-        
+    cursor.execute("SELECT * FROM companies ORDER BY rating DESC, total_projects_posted DESC")
+    companies = cursor.fetchall()
+
+    # Company metrics
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
         st.markdown(f'''
-        <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div style="flex: 1;">
-                    <h3>{project['title']} 
-                        <span class="status-badge status-{status.lower()}">{status}</span>
-                    </h3>
-                    <p style="color: #667eea; font-weight: 600;">{project['organization']}</p>
-                    <p>📍 {project['location']} • 
-                       <span style="color: {deadline_color};">⏰ {days_left} days left</span> • 
-                       👁️ {project['views']} views • 
-                       📝 {project['applications']} applications
-                    </p>
-                    <p style="color: rgba(255,255,255,0.7); margin: 1rem 0;">{project['description']}</p>
-                    <div style="margin: 1rem 0;">
-                        {' '.join([f'<span class="skill-tag">{tag}</span>' 
-                                 for tag in project['tags'].split(',')])}
-                    </div>
+        <div class="metric-card">
+            <div class="metric-value">{len(companies)}</div>
+            <div style="color: #64748b; font-weight: 600;">Partner Companies</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col2:
+        total_projects = sum(company['total_projects_posted'] for company in companies)
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{total_projects}</div>
+            <div style="color: #64748b; font-weight: 600;">Projects Posted</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col3:
+        verified_companies = sum(1 for company in companies if company['is_verified'])
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{verified_companies}</div>
+            <div style="color: #64748b; font-weight: 600;">Verified</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col4:
+        avg_rating = sum(company['rating'] for company in companies) / len(companies) if companies else 0
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{avg_rating:.1f}⭐</div>
+            <div style="color: #64748b; font-weight: 600;">Avg. Rating</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Industry filter
+    industries = list(set(company['industry'] for company in companies))
+    selected_industry = st.selectbox("Filter by Industry", ["All Industries"] + industries)
+
+    # Display companies
+    filtered_companies = companies
+    if selected_industry != "All Industries":
+        filtered_companies = [c for c in companies if c['industry'] == selected_industry]
+
+    for company in filtered_companies:
+        st.markdown(f'''
+        <div class="modern-card">
+            <div style="display: flex; gap: 1.5rem;">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #0077b5, #00a0dc); 
+                            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+                            color: white; font-size: 1.5rem; font-weight: bold;">
+                    {company['name'][:2].upper()}
                 </div>
-                <div style="text-align: right; min-width: 200px;">
-                    <div style="color: #22c55e; font-size: 1.2rem; font-weight: bold;">
-                        AED {project['budget_min']:,} - {project['budget_max']:,}
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                        <h3 style="margin: 0;">{company['name']}</h3>
+                        {f'<span class="status-badge status-verified">✓ Verified</span>' if company['is_verified'] else ''}
+                        <span class="status-badge status-featured">{company['industry']}</span>
                     </div>
-                    <div style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">
-                        Posted {project['posted']}
+                    <div style="color: #64748b; margin-bottom: 1rem;">
+                        📍 {company['location']} • 
+                        👥 {company['size']} • 
+                        📅 Founded {company['founded_year']} • 
+                        ⭐ {company['rating']:.1f} rating • 
+                        📋 {company['total_projects_posted']} projects posted
+                    </div>
+                    <div style="color: #475569; margin-bottom: 1rem;">
+                        {company['description']}
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="color: #16a34a; font-weight: bold;">
+                                💰 {company['kic_balance']:,} KIC Available
+                            </span>
+                        </div>
+                        <div>
+                            <a href="{company['website']}" target="_blank" style="color: #0077b5;">
+                                🌐 Visit Website
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         ''', unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns([1, 1, 4])
-        with col1:
-            if st.button("View Details", key=f"view_project_{project['id']}"):
-                # Увеличиваем счетчик просмотров
-                cursor.execute("UPDATE projects SET views = views + 1 WHERE id = ?", 
-                             (project['id'],))
-                db.conn.commit()
-                st.session_state.selected_project_id = project['id']
-                st.experimental_rerun()
-        
-        with col2:
-            if status == "Active" and st.button("Apply", key=f"apply_project_{project['id']}"):
-                st.session_state.apply_project_id = project['id']
-                st.experimental_rerun()
 
-def show_profile_page(db: Database):
-    """Страница профиля пользователя"""
-    
-    user = st.session_state.user
-    
-    st.markdown(f'<h1 class="gradient-text">My Profile</h1>', unsafe_allow_html=True)
-    
-    # Табы профиля
-    tab1, tab2, tab3, tab4 = st.tabs(["👤 Profile", "📅 Bookings", "🔔 Notifications", "⚙️ Settings"])
-    
-    with tab1:
-        col1, col2 = st.columns([1, 2])
-        
+        col1, col2, col3 = st.columns(3)
         with col1:
-            # Аватар
-            st.markdown('''
-            <div style="text-align: center;">
-                <div style="width: 150px; height: 150px; background: linear-gradient(135deg, #667eea, #764ba2); 
-                            border-radius: 50%; margin: 0 auto;"></div>
-                <h3 style="margin-top: 1rem;">{}</h3>
-                <p style="color: rgba(255,255,255,0.7);">{}</p>
-                <p>{}</p>
-            </div>
-            '''.format(user['name'], user['user_type'].title(), user['organization']), 
-            unsafe_allow_html=True)
-        
+            if st.button("📋 View Projects", key=f"projects_{company['id']}"):
+                st.session_state.company_projects_id = company['id']
+                st.session_state.current_page = "Projects"
+                st.rerun()
         with col2:
-            st.markdown("### Edit Profile")
-            
-            with st.form("edit_profile"):
-                name = st.text_input("Name", value=user['name'])
-                organization = st.text_input("Organization", value=user['organization'])
-                bio = st.text_area("Bio", placeholder="Tell us about yourself...")
-                
-                if st.form_submit_button("Save Changes"):
-                    cursor = db.conn.cursor()
-                    cursor.execute("""
-                        UPDATE users 
-                        SET name = ?, organization = ? 
-                        WHERE id = ?
-                    """, (name, organization, user['id']))
-                    db.conn.commit()
-                    st.success("Profile updated!")
-                    st.session_state.user['name'] = name
-                    st.session_state.user['organization'] = organization
-                    st.experimental_rerun()
-    
-    with tab2:
-        st.markdown("### My Bookings")
-        
-        cursor = db.conn.cursor()
-        cursor.execute("""
-            SELECT b.*, l.name as lab_name, l.location, l.price_per_day
-            FROM bookings b
-            JOIN labs l ON b.lab_id = l.id
-            WHERE b.user_id = ?
-            ORDER BY b.created_at DESC
-        """, (user['id'],))
-        bookings = cursor.fetchall()
-        
-        if bookings:
-            for booking in bookings:
-                status_class = {
-                    'Pending': 'status-pending',
-                    'Confirmed': 'status-active',
-                    'Cancelled': 'status-completed'
-                }.get(booking['status'], '')
-                
+            if st.button("💬 Contact", key=f"contact_{company['id']}"):
+                st.session_state.contact_company_id = company['id']
+                st.rerun()
+        with col3:
+            if st.button("🤝 Follow", key=f"follow_{company['id']}"):
+                st.success("Now following!")
+
+
+def show_projects_page(db: Database):
+    st.markdown('<h1 class="gradient-text">🚀 Innovation Projects</h1>', unsafe_allow_html=True)
+    st.markdown("Discover cutting-edge projects and collaboration opportunities")
+
+    # Project metrics
+    col1, col2, col3, col4 = st.columns(4)
+
+    cursor = db.conn.cursor()
+
+    with col1:
+        cursor.execute("SELECT COUNT(*) FROM projects WHERE status = 'Active'")
+        active_count = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{active_count}</div>
+            <div style="color: #64748b; font-weight: 600;">Active Projects</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col2:
+        cursor.execute("SELECT SUM(kic_budget_max) FROM projects WHERE status = 'Active'")
+        total_kic = cursor.fetchone()[0] or 0
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{total_kic:,}</div>
+            <div style="color: #64748b; font-weight: 600;">Total KIC Available</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col3:
+        cursor.execute("SELECT COUNT(DISTINCT organization) FROM projects")
+        org_count = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{org_count}</div>
+            <div style="color: #64748b; font-weight: 600;">Partner Organizations</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col4:
+        cursor.execute("SELECT AVG(applications) FROM projects WHERE status = 'Active'")
+        avg_applications = cursor.fetchone()[0] or 0
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{avg_applications:.1f}</div>
+            <div style="color: #64748b; font-weight: 600;">Avg. Applications</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Project tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["🔥 Active Projects", "⚡ Urgent", "💰 High Value", "🎯 My Applications"])
+
+    with tab1:
+        # Filters
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            search_query = st.text_input("🔍 Search projects...",
+                                         placeholder="Search by title, organization, or tags")
+        with col2:
+            urgency_filter = st.selectbox("Urgency", ["All", "High", "Medium", "Low"])
+        with col3:
+            remote_filter = st.checkbox("Remote possible", value=False)
+
+        # Fetch projects
+        query = """
+                SELECT p.*, \
+                       c.name                                 as company_name, \
+                       c.industry, \
+                       c.is_verified                          as company_verified,
+                       julianday(deadline) - julianday('now') as days_left
+                FROM projects p
+                         LEFT JOIN companies c ON p.company_id = c.id
+                WHERE p.status = 'Active' \
+                """
+        params = []
+
+        if search_query:
+            query += " AND (p.title LIKE ? OR p.organization LIKE ? OR p.tags LIKE ?)"
+            search_param = f"%{search_query}%"
+            params.extend([search_param] * 3)
+
+        if urgency_filter != "All":
+            query += " AND p.urgency = ?"
+            params.append(urgency_filter)
+
+        if remote_filter:
+            query += " AND p.remote_possible = TRUE"
+
+        query += " ORDER BY p.views DESC, p.posted DESC"
+
+        cursor.execute(query, params)
+        projects = cursor.fetchall()
+
+        if projects:
+            for project in projects:
+                days_left = int(project['days_left']) if project['days_left'] else 0
+                urgency_class = f"urgency-{project['urgency'].lower()}"
+
                 st.markdown(f'''
-                <div class="glass-card">
-                    <div style="display: flex; justify-content: space-between;">
+                <div class="project-card" style="--urgency-color: {'#dc2626' if project['urgency'] == 'High' else '#d97706' if project['urgency'] == 'Medium' else '#16a34a'};">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
                         <div>
-                            <h4>{booking['lab_name']}</h4>
-                            <p>📍 {booking['location']}</p>
-                            <p>📅 {booking['start_date']} to {booking['end_date']}</p>
-                            <p style="color: rgba(255,255,255,0.7);">{booking['purpose']}</p>
+                            <h3 style="margin-bottom: 0.5rem;">{project['title']}</h3>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span style="color: #0077b5; font-weight: 600;">{project['organization']}</span>
+                                {f'<span class="status-badge status-verified">✓ Verified</span>' if project.get('company_verified') else ''}
+                                <span class="status-badge status-featured">{project.get('industry', 'Technology')}</span>
+                            </div>
                         </div>
                         <div style="text-align: right;">
-                            <span class="status-badge {status_class}">{booking['status']}</span>
-                            <p style="color: #22c55e; font-size: 1.2rem; margin-top: 1rem;">
-                                AED {booking['total_cost']:,}
-                            </p>
+                            <div style="color: #16a34a; font-weight: bold; font-size: 1.3rem;">
+                                💰 {project['kic_budget_min']:,} - {project['kic_budget_max']:,} KIC
+                            </div>
+                            <div style="color: #64748b;">
+                                AED {project['budget_min']:,} - {project['budget_max']:,}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <span>📍 {project['location']}</span> • 
+                        <span class="{urgency_class}">⚡ {project['urgency']} Priority</span> • 
+                        <span>⏰ {days_left} days left</span> • 
+                        <span>👁️ {project['views']} views</span> • 
+                        <span>📝 {project['applications']} applications</span>
+                        {f" • 🌐 Remote OK" if project['remote_possible'] else ""}
+                    </div>
+
+                    <div style="color: #475569; margin-bottom: 1.5rem; line-height: 1.6;">
+                        {project['description']}
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: #1e293b;">Requirements:</strong>
+                        <div style="color: #64748b; margin-top: 0.5rem;">{project['requirements']}</div>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        {' '.join([f'<span class="skill-tag">{tag.strip()}</span>' for tag in project['tags'].split(',')])}
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    if st.button("📋 View Details", key=f"view_proj_{project['id']}"):
+                        cursor.execute("UPDATE projects SET views = views + 1 WHERE id = ?", (project['id'],))
+                        db.conn.commit()
+                        st.session_state.selected_project_id = project['id']
+                        st.session_state.current_page = "Project Details"
+                        st.rerun()
+
+                with col2:
+                    if st.button("🚀 Apply Now", key=f"apply_proj_{project['id']}"):
+                        st.session_state.apply_project_id = project['id']
+                        st.rerun()
+
+                with col3:
+                    if st.button("💬 Ask Question", key=f"question_proj_{project['id']}"):
+                        st.session_state.question_project_id = project['id']
+                        st.rerun()
+
+                with col4:
+                    if st.button("⭐ Save", key=f"save_proj_{project['id']}"):
+                        st.success("Project saved!")
+        else:
+            st.info("No projects found matching your criteria.")
+
+    with tab2:  # Urgent Projects
+        cursor.execute("""
+                       SELECT p.*,
+                              c.name                                 as company_name,
+                              c.industry,
+                              julianday(deadline) - julianday('now') as days_left
+                       FROM projects p
+                                LEFT JOIN companies c ON p.company_id = c.id
+                       WHERE p.urgency = 'High'
+                         AND p.status = 'Active'
+                       ORDER BY p.deadline ASC
+                       """)
+
+        urgent_projects = cursor.fetchall()
+
+        if urgent_projects:
+            st.markdown("### ⚡ High Priority Projects - Act Fast!")
+
+            for project in urgent_projects:
+                days_left = int(project['days_left']) if project['days_left'] else 0
+
+                st.markdown(f'''
+                <div class="modern-card" style="border-left: 4px solid #dc2626;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="color: #dc2626; margin-bottom: 0.5rem;">
+                                🚨 {project['title']}
+                            </h4>
+                            <div style="color: #64748b;">
+                                {project['organization']} • {project['location']} • ⏰ {days_left} days left
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #16a34a; font-weight: bold;">
+                                💰 {project['kic_budget_max']:,} KIC
+                            </div>
+                            <button class="professional-btn" style="font-size: 0.9rem;">
+                                Apply Now ⚡
+                            </button>
                         </div>
                     </div>
                 </div>
                 ''', unsafe_allow_html=True)
         else:
-            st.info("No bookings yet.")
-    
-    with tab3:
-        st.markdown("### Notifications")
-        
-        # Получаем уведомления
-        notifications = NotificationManager.get_notifications(user['id'], db)
-        
-        if notifications:
-            for notif in notifications:
-                read_class = "" if notif['is_read'] else "unread"
+            st.info("No urgent projects at the moment.")
+
+    with tab3:  # High Value Projects
+        cursor.execute("""
+                       SELECT p.*, c.name as company_name, c.industry
+                       FROM projects p
+                                LEFT JOIN companies c ON p.company_id = c.id
+                       WHERE p.kic_budget_max >= 5000
+                         AND p.status = 'Active'
+                       ORDER BY p.kic_budget_max DESC
+                       """)
+
+        high_value_projects = cursor.fetchall()
+
+        st.markdown("### 💎 Premium Projects - High Value Opportunities")
+
+        for project in high_value_projects:
+            st.markdown(f'''
+            <div class="modern-card" style="border: 2px solid #f59e0b; background: linear-gradient(135deg, rgba(251, 191, 36, 0.05), rgba(245, 158, 11, 0.05));">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <span style="font-size: 2rem;">💎</span>
+                    <div>
+                        <h3 style="margin: 0; color: #d97706;">{project['title']}</h3>
+                        <div style="color: #0077b5; font-weight: 600;">{project['organization']}</div>
+                    </div>
+                    <div style="margin-left: auto; text-align: right;">
+                        <div style="background: #f59e0b; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-weight: bold;">
+                            💰 {project['kic_budget_max']:,} KIC
+                        </div>
+                    </div>
+                </div>
+                <div style="color: #475569; margin-bottom: 1rem;">
+                    {project['description'][:200]}...
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        📍 {project['location']} • 👁️ {project['views']} views
+                    </div>
+                    <button class="professional-btn">
+                        Apply for Premium Project 💎
+                    </button>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+    with tab4:  # My Applications
+        user = st.session_state.user
+        applications = ProjectManager.get_project_applications(user['id'], db)
+
+        st.markdown("### 📋 My Project Applications")
+
+        if applications:
+            for app in applications:
+                status_color = "#16a34a" if app['status'] == "accepted" else "#f59e0b" if app[
+                                                                                              'status'] == "pending" else "#dc2626"
+                status_icon = "✅" if app['status'] == "accepted" else "⏳" if app['status'] == "pending" else "❌"
+
                 st.markdown(f'''
-                <div class="notification {read_class}">
+                <div class="modern-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="margin-bottom: 0.5rem;">{app['title']}</h4>
+                            <div style="color: #64748b;">
+                                {app['organization']} • Applied on {app['applied_date'][:10]}
+                            </div>
+                            <div style="margin-top: 0.5rem;">
+                                <strong>Your Proposal:</strong> {app['proposed_kic_rate']} KIC
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: {status_color}; font-weight: bold; margin-bottom: 0.5rem;">
+                                {status_icon} {app['status'].title()}
+                            </div>
+                            <div style="color: #16a34a; font-weight: bold;">
+                                💰 {app['kic_budget_min']:,} - {app['kic_budget_max']:,} KIC
+                            </div>
+                        </div>
+                    </div>
+                    {f'<div style="margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: 8px;"><strong>Response:</strong> {app["response_message"]}</div>' if app['response_message'] else ''}
+                </div>
+                ''', unsafe_allow_html=True)
+        else:
+            st.info("You haven't applied to any projects yet. Browse active projects to get started!")
+
+        # Application handler
+        if hasattr(st.session_state, 'apply_project_id'):
+            project_id = st.session_state.apply_project_id
+
+            with st.form("project_application"):
+                st.markdown("### 📝 Submit Application")
+
+                application_text = st.text_area("Why are you the perfect fit for this project?",
+                                                placeholder="Describe your relevant experience, skills, and approach...")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    proposed_rate = st.number_input("Proposed Rate (AED)", min_value=0, value=5000)
+                with col2:
+                    proposed_kic_rate = st.number_input("Proposed Rate (KIC)", min_value=0, value=250)
+
+                if st.form_submit_button("Submit Application", use_container_width=True):
+                    success = ProjectManager.apply_to_project(project_id, user['id'], application_text,
+                                                              proposed_rate, proposed_kic_rate, db)
+                    if success:
+                        st.success("Application submitted successfully!")
+                        del st.session_state.apply_project_id
+                        st.rerun()
+                    else:
+                        st.error("You have already applied to this project.")
+
+
+def show_labs_page(db: Database):
+    st.markdown('<h1 class="gradient-text">🔬 Research Labs</h1>', unsafe_allow_html=True)
+    st.markdown("Access cutting-edge research facilities across the UAE")
+
+    # Lab metrics
+    col1, col2, col3, col4 = st.columns(4)
+
+    cursor = db.conn.cursor()
+
+    with col1:
+        cursor.execute("SELECT COUNT(*) FROM labs")
+        total_labs = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{total_labs}</div>
+            <div style="color: #64748b; font-weight: 600;">Available Labs</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col2:
+        cursor.execute("SELECT AVG(rating) FROM labs")
+        avg_rating = cursor.fetchone()[0] or 0
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{avg_rating:.1f}⭐</div>
+            <div style="color: #64748b; font-weight: 600;">Average Rating</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col3:
+        cursor.execute("SELECT COUNT(DISTINCT specialty) FROM labs")
+        specialties = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{specialties}</div>
+            <div style="color: #64748b; font-weight: 600;">Specializations</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col4:
+        cursor.execute("SELECT SUM(total_bookings) FROM labs")
+        total_bookings = cursor.fetchone()[0] or 0
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{total_bookings}</div>
+            <div style="color: #64748b; font-weight: 600;">Total Bookings</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Search and filters
+    col1, col2, col3 = st.columns([3, 1, 1])
+
+    with col1:
+        search_query = st.text_input("🔍 Search labs...",
+                                     placeholder="Search by name, equipment, or specialty")
+
+    with col2:
+        sort_by = st.selectbox("Sort by", ["Rating", "Price", "KIC Price", "Availability"])
+
+    with col3:
+        payment_method = st.radio("Payment", ["Both", "AED", "KIC"], horizontal=True)
+
+    # Advanced filters
+    with st.expander("🔧 Advanced Filters", expanded=False):
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            cursor.execute("SELECT DISTINCT specialty FROM labs")
+            specialties = [row[0] for row in cursor.fetchall()]
+            selected_specialties = st.multiselect("Specialties", specialties)
+
+        with col2:
+            cursor.execute("SELECT DISTINCT location FROM labs")
+            locations = [row[0] for row in cursor.fetchall()]
+            selected_locations = st.multiselect("Locations", locations)
+
+        with col3:
+            if payment_method in ["Both", "AED"]:
+                aed_range = st.slider("AED Price per day", 0, 3000, (0, 3000))
+            else:
+                aed_range = (0, 10000)
+
+        with col4:
+            if payment_method in ["Both", "KIC"]:
+                kic_range = st.slider("KIC Price per day", 0, 1500, (0, 1500))
+            else:
+                kic_range = (0, 5000)
+
+    # Build query
+    query = """
+            SELECT l.*, u.name as university_name
+            FROM labs l
+                     JOIN universities u ON l.university_id = u.id
+            WHERE 1 = 1 \
+            """
+    params = []
+
+    if search_query:
+        query += " AND (l.name LIKE ? OR l.description LIKE ? OR l.equipment LIKE ? OR l.specialty LIKE ?)"
+        search_param = f"%{search_query}%"
+        params.extend([search_param] * 4)
+
+    if selected_specialties:
+        query += f" AND l.specialty IN ({','.join(['?'] * len(selected_specialties))})"
+        params.extend(selected_specialties)
+
+    if selected_locations:
+        query += f" AND l.location IN ({','.join(['?'] * len(selected_locations))})"
+        params.extend(selected_locations)
+
+    query += " AND l.price_per_day BETWEEN ? AND ?"
+    params.extend([aed_range[0], aed_range[1]])
+
+    query += " AND l.kic_price_per_day BETWEEN ? AND ?"
+    params.extend([kic_range[0], kic_range[1]])
+
+    # Sorting
+    if sort_by == "Rating":
+        query += " ORDER BY l.rating DESC"
+    elif sort_by == "Price":
+        query += " ORDER BY l.price_per_day ASC"
+    elif sort_by == "KIC Price":
+        query += " ORDER BY l.kic_price_per_day ASC"
+    else:
+        query += " ORDER BY l.available_from ASC"
+
+    cursor.execute(query, params)
+    labs = cursor.fetchall()
+
+    st.markdown(f"### Found {len(labs)} laboratories")
+
+    # Display labs
+    for lab in labs:
+        st.markdown(f'''
+        <div class="lab-card">
+            <div style="display: flex; gap: 1.5rem;">
+                <div style="flex-shrink: 0;">
+                    <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #0077b5, #00a0dc); 
+                                border-radius: 12px; display: flex; align-items: center; justify-content: center;
+                                color: white; font-size: 2rem;">
+                        🔬
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 0.5rem;">
+                        <div style="flex: 1;">
+                            <h3 style="margin-bottom: 0.5rem;">{lab['name']}</h3>
+                            <div style="color: #0077b5; font-weight: 600; margin-bottom: 0.5rem;">
+                                {lab['university_name']}
+                            </div>
+                            <div style="color: #64748b; margin-bottom: 1rem;">
+                                📍 {lab['location']} • 
+                                🧪 {lab['specialty']} • 
+                                👥 Capacity: {lab['capacity']} • 
+                                ⭐ {lab['rating']:.1f} rating • 
+                                📅 {lab['total_bookings']} bookings
+                            </div>
+                            <div style="color: #475569; margin-bottom: 1rem; line-height: 1.6;">
+                                {lab['description']}
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <strong>Equipment:</strong>
+                                <div style="margin-top: 0.5rem;">
+                                    {' '.join([f'<span class="skill-tag">{eq.strip()}</span>'
+                                               for eq in lab['equipment'].split(',')[:4]])}
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <strong>Amenities:</strong>
+                                <div style="margin-top: 0.5rem;">
+                                    {' '.join([f'<span class="skill-tag">{amenity.strip()}</span>'
+                                               for amenity in lab['amenities'].split(',')[:3]])}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align: right; margin-left: 2rem;">
+                            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                <div style="margin-bottom: 1rem;">
+                                    <div style="color: #16a34a; font-weight: bold; font-size: 1.3rem;">
+                                        💰 {lab['kic_price_per_day']} KIC/day
+                                    </div>
+                                    <div style="color: #64748b; font-size: 0.9rem;">
+                                        or AED {lab['price_per_day']}/day
+                                    </div>
+                                </div>
+                                <div style="color: #64748b; font-size: 0.9rem; margin-bottom: 1rem;">
+                                    Available from: {lab['available_from']}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            if st.button("📋 View Details", key=f"view_lab_{lab['id']}"):
+                st.session_state.selected_lab_id = lab['id']
+                st.session_state.current_page = "Lab Details"
+                st.rerun()
+        with col2:
+            if st.button("💰 Book with KIC", key=f"book_kic_{lab['id']}"):
+                st.session_state.book_lab_kic_id = lab['id']
+                st.rerun()
+        with col3:
+            if st.button("💳 Book with AED", key=f"book_aed_{lab['id']}"):
+                st.session_state.book_lab_aed_id = lab['id']
+                st.rerun()
+        with col4:
+            if st.button("🔑 Access", key=f"access_lab_{lab['id']}"):
+                st.session_state.current_page = "Lab Access"
+                st.rerun()
+
+
+def show_lab_access_page(db: Database):
+    st.markdown('<h1 class="gradient-text">🔐 Lab Access Management</h1>', unsafe_allow_html=True)
+
+    user = st.session_state.user
+    tab1, tab2, tab3 = st.tabs(["🔑 My Access", "🚪 Verify Access", "📋 Request Access"])
+
+    with tab1:
+        lab_access = LabAccessManager.get_user_lab_access(user['id'], db)
+
+        if lab_access:
+            st.markdown("### Your Lab Access Credentials")
+
+            for access in lab_access:
+                st.markdown(f'''
+                <div class="credentials-card">
+                    <h4>🔬 {access['lab_name']}</h4>
+                    <div style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
+                        {access['university_name']}
+                    </div>
+                    <div style="color: rgba(255, 255, 255, 0.6); margin-bottom: 1rem;">
+                        🎫 Access Level: {access['access_level'].title()} • 
+                        📅 Valid until: {access['valid_until']}
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.1); padding: 1rem; border-radius: 8px;">
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">Login Credentials:</div>
+                        <div>
+                            Username: <strong>{access['username']}</strong><br>
+                            Password: <em>Use your saved password</em>
+                        </div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+        else:
+            st.info("No lab access credentials yet. Request access below.")
+
+    with tab2:
+        st.markdown("### 🚪 Lab Access Verification")
+
+        with st.form("verify_access"):
+            cursor = db.conn.cursor()
+            cursor.execute("SELECT id, name FROM labs ORDER BY name")
+            labs = cursor.fetchall()
+
+            if labs:
+                selected_lab = st.selectbox("Select Lab", labs, format_func=lambda x: x[1])
+                username = st.text_input("Username")
+                password = st.text_input("Password", type="password")
+
+                if st.form_submit_button("Verify Access", use_container_width=True):
+                    if selected_lab and username and password:
+                        access = LabAccessManager.verify_lab_access(selected_lab[0], username, password, db)
+                        if access:
+                            st.success(f"✅ Access granted to {access['lab_name']}!")
+                            st.markdown(f'''
+                            <div class="modern-card success-animation" style="border-left: 4px solid #16a34a;">
+                                <h4>Access Verified</h4>
+                                <div>User: {access['user_name']}</div>
+                                <div>Lab: {access['lab_name']}</div>
+                                <div>Access Level: {access['access_level'].title()}</div>
+                                <div>Valid until: {access['valid_until']}</div>
+                            </div>
+                            ''', unsafe_allow_html=True)
+                        else:
+                            st.error("❌ Access denied. Invalid credentials or expired access.")
+            else:
+                st.info("No labs available for access verification.")
+
+    with tab3:
+        st.markdown("### 📋 Request Lab Access")
+
+        with st.form("request_access"):
+            cursor = db.conn.cursor()
+            cursor.execute("""
+                           SELECT l.id, l.name, u.name as university_name
+                           FROM labs l
+                                    JOIN universities u ON l.university_id = u.id
+                           ORDER BY u.name, l.name
+                           """)
+            labs = cursor.fetchall()
+
+            if labs:
+                selected_lab = st.selectbox("Select Lab", labs,
+                                            format_func=lambda x: f"{x[1]} ({x[2]})")
+                access_level = st.selectbox("Access Level", ["basic", "advanced", "premium"])
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    valid_from = st.date_input("Access From", value=datetime.now().date())
+                with col2:
+                    valid_until = st.date_input("Access Until",
+                                                value=datetime.now().date() + timedelta(days=90))
+
+                purpose = st.text_area("Purpose of Access",
+                                       placeholder="Describe your research project or why you need access...")
+
+                if st.form_submit_button("Request Access", use_container_width=True):
+                    if selected_lab and purpose:
+                        username, password = LabAccessManager.grant_lab_access(
+                            selected_lab[0], user['id'], access_level,
+                            valid_from.strftime('%Y-%m-%d'), valid_until.strftime('%Y-%m-%d'), db
+                        )
+
+                        if username and password:
+                            st.success("✅ Lab access granted!")
+                            st.markdown(f'''
+                            <div class="credentials-card success-animation">
+                                <h4>🔑 Your New Lab Credentials</h4>
+                                <div style="background: rgba(255, 255, 255, 0.2); padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                                    <div>
+                                        <strong>Username:</strong> {username}<br>
+                                        <strong>Password:</strong> {password}
+                                    </div>
+                                </div>
+                                <div style="color: #fbbf24; font-size: 0.9rem;">
+                                    ⚠️ Save these credentials securely. Password shown only once.
+                                </div>
+                            </div>
+                            ''', unsafe_allow_html=True)
+                            st.rerun()
+            else:
+                st.info("No labs available for access requests.")
+
+
+def show_universities_page(db: Database):
+    st.markdown('<h1 class="gradient-text">🎓 Universities</h1>', unsafe_allow_html=True)
+    st.markdown("Leading academic institutions in the UAE innovation ecosystem")
+
+    cursor = db.conn.cursor()
+    cursor.execute("SELECT * FROM universities ORDER BY ranking_national")
+    universities = cursor.fetchall()
+
+    # Metrics
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{len(universities)}</div>
+            <div style="color: #64748b; font-weight: 600;">Universities</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col2:
+        total_students = sum(uni['total_students'] for uni in universities)
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{total_students:,}</div>
+            <div style="color: #64748b; font-weight: 600;">Total Students</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col3:
+        total_faculty = sum(uni['total_faculty'] for uni in universities)
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{total_faculty:,}</div>
+            <div style="color: #64748b; font-weight: 600;">Faculty Members</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col4:
+        cursor.execute("SELECT COUNT(*) FROM labs")
+        total_labs = cursor.fetchone()[0]
+        st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{total_labs}</div>
+            <div style="color: #64748b; font-weight: 600;">Research Labs</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    for uni in universities:
+        cursor.execute("SELECT COUNT(*) FROM labs WHERE university_id = ?", (uni['id'],))
+        lab_count = cursor.fetchone()[0]
+
+        st.markdown(f'''
+        <div class="modern-card">
+            <div style="display: flex; gap: 1.5rem;">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #0077b5, #00a0dc); 
+                            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+                            color: white; font-size: 1.5rem; font-weight: bold;">
+                    🎓
+                </div>
+                <div style="flex: 1;">
                     <div style="display: flex; justify-content: space-between;">
                         <div>
-                            <h4>{notif['title']}</h4>
-                            <p style="color: rgba(255,255,255,0.7);">{notif['message']}</p>
+                            <h3>{uni['name']}</h3>
+                            <div style="color: #64748b; margin-bottom: 1rem;">
+                                📍 {uni['location']} • Est. {uni['established_year']} • 
+                                👥 {uni['total_students']:,} students • 
+                                👨‍🏫 {uni['total_faculty']} faculty • 
+                                🔬 {lab_count} labs •
+                                🏆 Rank #{uni['ranking_national']}
+                            </div>
+                            <div style="color: #475569; margin-bottom: 1rem;">{uni['description']}</div>
+                            <div style="margin-top: 1rem;">
+                                📧 {uni['contact_email']} • 📞 {uni['contact_phone']}
+                                {f' • <a href="{uni["website"]}" target="_blank" style="color: #0077b5;">🌐 Website</a>' if uni['website'] else ''}
+                            </div>
                         </div>
-                        <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">
-                            {notif['created_at']}
+                        <div>
+                            {f'<span class="status-badge status-verified">✓ Verified</span>' if uni['is_verified'] else ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("🔬 View Labs", key=f"labs_{uni['id']}"):
+                st.session_state.university_labs_id = uni['id']
+                st.session_state.current_page = "Labs"
+                st.rerun()
+        with col2:
+            if st.button("👥 View Researchers", key=f"researchers_{uni['id']}"):
+                st.session_state.university_researchers_id = uni['id']
+                st.session_state.current_page = "Talents"
+                st.rerun()
+        with col3:
+            if st.button("📞 Contact", key=f"contact_uni_{uni['id']}"):
+                st.info(f"Contact: {uni['contact_email']} or {uni['contact_phone']}")
+
+
+def show_kic_hub_page(db: Database):
+    user = st.session_state.user
+
+    st.markdown('<h1 class="gradient-text">💰 KIC Hub</h1>', unsafe_allow_html=True)
+    st.markdown("**Knowledge and Innovation Connected** - The future of innovation economy")
+
+    # KIC Balance Overview
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown(f'''
+        <div class="profile-card">
+            <h2 style="margin-bottom: 1rem;">Your KIC Wallet</h2>
+            <div style="font-size: 3rem; font-weight: bold; margin-bottom: 0.5rem;">
+                {user['kic_balance']}
+            </div>
+            <div style="font-size: 1.2rem; opacity: 0.8;">KIC Available</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col2:
+        cursor = db.conn.cursor()
+        cursor.execute("SELECT SUM(amount) FROM kic_transactions WHERE user_id = ? AND amount > 0", (user['id'],))
+        total_earned = cursor.fetchone()[0] or 0
+
+        st.markdown(f'''
+        <div class="modern-card" style="text-align: center; padding: 2rem;">
+            <h3>Total Earned</h3>
+            <div style="font-size: 2rem; font-weight: bold; color: #16a34a;">
+                +{total_earned} KIC
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col3:
+        cursor.execute("SELECT SUM(amount) FROM kic_transactions WHERE user_id = ? AND amount < 0", (user['id'],))
+        total_spent = abs(cursor.fetchone()[0] or 0)
+
+        st.markdown(f'''
+        <div class="modern-card" style="text-align: center; padding: 2rem;">
+            <h3>Total Spent</h3>
+            <div style="font-size: 2rem; font-weight: bold; color: #dc2626;">
+                -{total_spent} KIC
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # KIC Features
+    tab1, tab2, tab3, tab4 = st.tabs(["💳 Transactions", "📊 Analytics", "🔄 Transfer", "🎁 Earn More"])
+
+    with tab1:
+        st.markdown("### Recent Transactions")
+
+        transactions = KICManager.get_kic_transactions(user['id'], db, 20)
+
+        if transactions:
+            for txn in transactions:
+                color = "#16a34a" if txn['amount'] > 0 else "#dc2626"
+                sign = "+" if txn['amount'] > 0 else ""
+                icon = "📈" if txn['amount'] > 0 else "📉"
+
+                st.markdown(f'''
+                <div class="modern-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span style="font-size: 1.5rem;">{icon}</span>
+                            <div>
+                                <div style="font-weight: 600;">{txn['transaction_type'].title()}</div>
+                                <div style="color: #64748b; font-size: 0.9rem;">{txn['description']}</div>
+                                <div style="color: #94a3b8; font-size: 0.8rem;">{txn['created_at']}</div>
+                            </div>
+                        </div>
+                        <div style="color: {color}; font-weight: bold; font-size: 1.2rem;">
+                            {sign}{txn['amount']} KIC
                         </div>
                     </div>
                 </div>
                 ''', unsafe_allow_html=True)
-                
-                # Отмечаем как прочитанное
-                if not notif['is_read']:
-                    cursor = db.conn.cursor()
-                    cursor.execute("UPDATE notifications SET is_read = TRUE WHERE id = ?", 
-                                 (notif['id'],))
-                    db.conn.commit()
         else:
-            st.info("No notifications.")
-    
-    with tab4:
-        st.markdown("### Account Settings")
-        
+            st.info("No transactions yet. Start earning KIC by completing projects!")
+
+    with tab2:
+        st.markdown("### KIC Analytics")
+
+        # Transaction summary
+        cursor.execute("""
+                       SELECT strftime('%Y-%m', created_at) as month,
+                SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as earned,
+                SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as spent
+                       FROM kic_transactions
+                       WHERE user_id = ?
+                       GROUP BY month
+                       ORDER BY month DESC
+                           LIMIT 6
+                       """, (user['id'],))
+
+        monthly_data = cursor.fetchall()
+
+        if monthly_data:
+            months = [data['month'] for data in monthly_data][::-1]
+            earned = [data['earned'] for data in monthly_data][::-1]
+            spent = [data['spent'] for data in monthly_data][::-1]
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(name='Earned', x=months, y=earned, marker_color='#16a34a'))
+            fig.add_trace(go.Bar(name='Spent', x=months, y=spent, marker_color='#dc2626'))
+
+            fig.update_layout(
+                title="Monthly KIC Activity",
+                xaxis_title="Month",
+                yaxis_title="KIC Amount",
+                barmode='group',
+                height=400,
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)'
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            # Mock data for demo
+            dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
+            earnings = [50 + i * 5 + (i % 7) * 20 for i in range(30)]
+
+            fig = px.line(x=dates, y=earnings,
+                          title="Daily KIC Earnings Projection",
+                          labels={'x': 'Date', 'y': 'KIC Earned'})
+            fig.update_traces(line_color='#f59e0b', line_width=3)
+            fig.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    with tab3:
+        st.markdown("### Transfer KIC")
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
-            st.markdown("#### Change Password")
+            st.markdown("#### Send KIC")
+            with st.form("send_kic"):
+                cursor = db.conn.cursor()
+                cursor.execute("SELECT id, name FROM users WHERE id != ?", (user['id'],))
+                other_users = cursor.fetchall()
+
+                recipient = st.selectbox("Send to",
+                                         [(u['id'], u['name']) for u in other_users],
+                                         format_func=lambda x: x[1])
+
+                amount = st.number_input("Amount (KIC)", min_value=1, max_value=user['kic_balance'], value=100)
+                description = st.text_input("Description", value="KIC Transfer")
+
+                if st.form_submit_button("Send KIC 💸", use_container_width=True):
+                    success = KICManager.transfer_kic(user['id'], recipient[0], amount, description, db)
+                    if success:
+                        st.success(f"Successfully sent {amount} KIC to {recipient[1]}!")
+                        st.session_state.user['kic_balance'] -= amount
+                        st.rerun()
+                    else:
+                        st.error("Insufficient KIC balance!")
+
+        with col2:
+            st.markdown("#### Request KIC")
+            with st.form("request_kic"):
+                requester = st.selectbox("Request from",
+                                         [(u['id'], u['name']) for u in other_users],
+                                         format_func=lambda x: x[1])
+
+                req_amount = st.number_input("Amount (KIC)", min_value=1, value=100)
+                req_reason = st.text_input("Reason", value="Payment for services")
+
+                if st.form_submit_button("Send Request 📧", use_container_width=True):
+                    st.success(f"KIC request sent to {requester[1]}!")
+
+    with tab4:
+        st.markdown("### Earn More KIC")
+
+        earning_opportunities = [
+            {
+                "title": "Complete Your Profile",
+                "description": "Add skills, portfolio, and certifications",
+                "reward": 100,
+                "icon": "👤",
+                "progress": 80
+            },
+            {
+                "title": "First Project Completion",
+                "description": "Successfully complete your first project",
+                "reward": 500,
+                "icon": "🎯",
+                "progress": 0
+            },
+            {
+                "title": "5-Star Rating",
+                "description": "Receive a 5-star rating from a client",
+                "reward": 200,
+                "icon": "⭐",
+                "progress": 60
+            },
+            {
+                "title": "Referral Bonus",
+                "description": "Invite a friend to join the platform",
+                "reward": 300,
+                "icon": "🤝",
+                "progress": 20
+            },
+            {
+                "title": "Lab Certification",
+                "description": "Complete lab safety certification",
+                "reward": 150,
+                "icon": "🔬",
+                "progress": 100
+            },
+            {
+                "title": "Innovation Challenge",
+                "description": "Participate in monthly innovation challenge",
+                "reward": 1000,
+                "icon": "🏆",
+                "progress": 30
+            }
+        ]
+
+        for opportunity in earning_opportunities:
+            st.markdown(f'''
+            <div class="modern-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-size: 2rem;">{opportunity['icon']}</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1.1rem;">{opportunity['title']}</div>
+                            <div style="color: #64748b;">{opportunity['description']}</div>
+                            <div style="margin-top: 0.5rem;">
+                                <div style="background: #e2e8f0; border-radius: 10px; height: 8px; overflow: hidden;">
+                                    <div style="background: linear-gradient(90deg, #16a34a, #22c55e); 
+                                               width: {opportunity['progress']}%; height: 100%;"></div>
+                                </div>
+                                <div style="color: #64748b; font-size: 0.8rem; margin-top: 0.25rem;">
+                                    {opportunity['progress']}% Complete
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #16a34a; font-weight: bold; font-size: 1.2rem;">
+                            +{opportunity['reward']} KIC
+                        </div>
+                        <button class="professional-btn" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                            {'Claim' if opportunity['progress'] == 100 else 'Start Now'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+
+def show_messages_page(db: Database):
+    user = st.session_state.user
+
+    st.markdown('<h1 class="gradient-text">💬 Messages</h1>', unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1, 2])
+
+    with col1:
+        st.markdown("### Conversations")
+
+        conversations = SocialManager.get_conversations(user['id'], db)
+
+        if conversations:
+            for conv in conversations:
+                is_active = hasattr(st.session_state, 'active_conversation') and \
+                            st.session_state.active_conversation == conv['other_user_id']
+
+                with st.container():
+                    if st.button(f"👤 {conv['name']}",
+                                 key=f"conv_{conv['other_user_id']}",
+                                 use_container_width=True,
+                                 type="primary" if is_active else "secondary"):
+                        st.session_state.active_conversation = conv['other_user_id']
+                        st.rerun()
+
+                    st.markdown(f"<small>{conv['user_type']} • {conv['last_message_time'][:16]}</small>",
+                                unsafe_allow_html=True)
+                    st.markdown("---")
+        else:
+            st.info("No conversations yet. Connect with talents to start messaging!")
+
+        # Start new conversation
+        st.markdown("### Start New Conversation")
+        cursor = db.conn.cursor()
+        cursor.execute("""
+                       SELECT u.id, u.name, u.user_type
+                       FROM users u
+                       WHERE u.id != ?
+                       ORDER BY u.name
+                       """, (user['id'],))
+        all_users = cursor.fetchall()
+
+        selected_user = st.selectbox("Select user",
+                                     [(u['id'], f"{u['name']} ({u['user_type']})") for u in all_users],
+                                     format_func=lambda x: x[1])
+
+        if st.button("Start Conversation", use_container_width=True):
+            st.session_state.active_conversation = selected_user[0]
+            st.rerun()
+
+    with col2:
+        if hasattr(st.session_state, 'active_conversation'):
+            other_user_id = st.session_state.active_conversation
+
+            # Get other user info
+            cursor = db.conn.cursor()
+            cursor.execute("SELECT name, user_type FROM users WHERE id = ?", (other_user_id,))
+            other_user = cursor.fetchone()
+
+            st.markdown(f"### 💬 Chat with {other_user['name']}")
+
+            # Message history container
+            message_container = st.container()
+
+            # Message input at bottom
+            with st.form("send_message", clear_on_submit=True):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    message_text = st.text_input("Type your message...", label_visibility="collapsed")
+                with col2:
+                    send_button = st.form_submit_button("Send 📤", use_container_width=True)
+
+                if send_button and message_text.strip():
+                    SocialManager.send_message(user['id'], other_user_id, message_text, db)
+                    st.rerun()
+
+            # Display messages in the container
+            with message_container:
+                messages = SocialManager.get_messages(user['id'], other_user_id, db)
+
+                st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
+                for message in messages:
+                    bubble_class = "sent" if message['sender_id'] == user['id'] else "received"
+
+                    st.markdown(f'''
+                    <div class="message-bubble {bubble_class}">
+                        <div style="font-size: 0.9rem;">{message['message']}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 0.25rem;">
+                            {message['created_at'][11:16]}
+                        </div>
+                    </div>
+                    ''', unsafe_allow_html=True)
+
+                st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('''
+            <div style="text-align: center; padding: 4rem; color: #64748b;">
+                <h3>👋 Select a conversation to start messaging</h3>
+                <p>Connect with talented professionals and start collaborating!</p>
+            </div>
+            ''', unsafe_allow_html=True)
+
+
+def show_my_projects_page(db: Database):
+    user = st.session_state.user
+    st.markdown('<h1 class="gradient-text">📊 My Projects</h1>', unsafe_allow_html=True)
+
+    tab1, tab2, tab3 = st.tabs(["🚀 Active Projects", "✅ Completed Projects", "📈 Analytics"])
+
+    user_projects = ProjectManager.get_user_projects(user['id'], db)
+
+    with tab1:
+        active_projects = [p for p in user_projects if p['participation_status'] == 'active']
+
+        if active_projects:
+            for project in active_projects:
+                urgency_class = f"urgency-{project['urgency'].lower()}"
+
+                st.markdown(f'''
+                <div class="project-card">
+                    <h4>{project['title']}</h4>
+                    <div style="color: #0077b5; font-weight: 600; margin-bottom: 0.5rem;">
+                        My Role: {project['role'].replace('_', ' ').title()}
+                    </div>
+                    <div style="color: #64748b; margin-bottom: 1rem;">
+                        📍 {project['location']} • 📅 Joined: {project['joined_date']} • 
+                        <span class="{urgency_class}">⚡ {project['urgency']} Priority</span> • 
+                        📋 Status: {project['status']}
+                    </div>
+                    <div style="color: #475569; margin-bottom: 1rem;">{project['description']}</div>
+                    {'<div style="color: #64748b;"><strong>My Contribution:</strong> ' + project['contribution_description'] + '</div>' if project['contribution_description'] else ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                        <div style="color: #16a34a; font-weight: bold;">
+                            💰 {project['kic_budget_min']:,} - {project['kic_budget_max']:,} KIC
+                        </div>
+                        <button class="professional-btn" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+        else:
+            st.info("No active projects. Browse available projects to get started!")
+
+    with tab2:
+        completed_projects = [p for p in user_projects if p['participation_status'] == 'completed']
+
+        if completed_projects:
+            total_earned = sum(p['payment_received'] or 0 for p in completed_projects)
+            avg_rating = sum(p['rating_received'] or 0 for p in completed_projects if p['rating_received']) / len(
+                [p for p in completed_projects if p['rating_received']]) if any(
+                p['rating_received'] for p in completed_projects) else 0
+
+            # Summary metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-value">{len(completed_projects)}</div>
+                    <div style="color: #64748b;">Projects Completed</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            with col2:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-value">{total_earned:,} KIC</div>
+                    <div style="color: #64748b;">Total Earned</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            with col3:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-value">{avg_rating:.1f}⭐</div>
+                    <div style="color: #64748b;">Average Rating</div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+            st.markdown("---")
+
+            for project in completed_projects:
+                st.markdown(f'''
+                <div class="modern-card">
+                    <h4>✅ {project['title']}</h4>
+                    <div style="color: #0077b5; font-weight: 600;">
+                        Role: {project['role'].replace('_', ' ').title()}
+                    </div>
+                    <div style="color: #64748b; margin: 0.5rem 0;">
+                        📅 {project['joined_date']} - {project['completion_date']} • 
+                        ⭐ Rating: {project['rating_received']:.1f}/5.0 • 
+                        💰 Earned: {project['payment_received']} KIC
+                    </div>
+                    <div style="color: #475569; margin-top: 0.5rem;">
+                        <strong>Contribution:</strong> {project['contribution_description']}
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+        else:
+            st.info("No completed projects yet. Keep working on your active projects!")
+
+    with tab3:
+        st.markdown("### 📊 Project Analytics")
+
+        if user_projects:
+            # Project timeline
+            project_data = []
+            for project in user_projects:
+                project_data.append({
+                    'Project': project['title'][:30] + '...' if len(project['title']) > 30 else project['title'],
+                    'Start': project['joined_date'],
+                    'End': project['completion_date'] or datetime.now().strftime('%Y-%m-%d'),
+                    'Status': project['participation_status'].title(),
+                    'Payment': project['payment_received'] or 0
+                })
+
+            df = pd.DataFrame(project_data)
+
+            # Projects over time
+            fig = px.timeline(df, x_start="Start", x_end="End", y="Project", color="Status",
+                              title="Project Timeline",
+                              color_discrete_map={'Active': '#0077b5', 'Completed': '#16a34a'})
+            fig.update_layout(height=400, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Earnings by project
+            completed_df = df[df['Payment'] > 0]
+            if not completed_df.empty:
+                fig2 = px.bar(completed_df, x="Project", y="Payment",
+                              title="Earnings by Project (KIC)",
+                              color_discrete_sequence=['#16a34a'])
+                fig2.update_layout(height=400, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.info("Complete some projects to see analytics!")
+
+
+def show_profile_page(db: Database):
+    user = st.session_state.user
+
+    st.markdown(f'''
+    <div style="margin-bottom: 2rem;">
+        <h1 class="gradient-text">My Professional Profile</h1>
+        <p style="color: #64748b;">Manage your professional presence on UAE Innovate Hub</p>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    # Profile tabs
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["👤 Profile", "🤝 Network", "💼 Activity", "💰 Wallet", "⚙️ Settings"])
+
+    with tab1:
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            # Enhanced profile card
+            st.markdown(f'''
+            <div class="profile-card">
+                <div class="profile-avatar">{user['name'][0].upper()}</div>
+                <h3 style="margin-bottom: 0.5rem;">{user['name']}</h3>
+                {f'<span class="status-badge status-verified">✓ Verified</span>' if user['is_verified'] else ''}
+                <div style="opacity: 0.9; margin: 1rem 0;">{user['organization']}</div>
+                <div style="opacity: 0.8; margin-bottom: 1rem;">📍 {user.get('location', 'UAE')}</div>
+
+                <div style="display: flex; justify-content: space-around; margin: 1.5rem 0;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: bold;">{user['total_projects_completed']}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Projects</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: bold;">{user['reputation_score']}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Reputation</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: bold;">{user['kic_balance']}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">KIC</div>
+                    </div>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+            # Quick stats
+            cursor = db.conn.cursor()
+            cursor.execute("""
+                           SELECT COUNT(*)
+                           FROM connections
+                           WHERE (requester_id = ? OR addressee_id = ?)
+                             AND status = 'accepted'
+                           """, (user['id'], user['id']))
+            network_size = cursor.fetchone()[0]
+
+            st.markdown(f'''
+            <div class="modern-card">
+                <h4>Professional Stats</h4>
+                <div style="margin: 1rem 0;">
+                    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0;">
+                        <span>Network Size:</span>
+                        <strong>{network_size} connections</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0;">
+                        <span>Profile Views:</span>
+                        <strong>127 this month</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0;">
+                        <span>KIC Earned:</span>
+                        <strong>2,450 total</strong>
+                    </div>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+        with col2:
+            st.markdown("### Edit Profile Information")
+
+            with st.form("edit_profile"):
+                col_a, col_b = st.columns(2)
+
+                with col_a:
+                    name = st.text_input("Full Name", value=user['name'])
+                    organization = st.text_input("Organization", value=user['organization'])
+                    location = st.selectbox("Location",
+                                            ["Abu Dhabi", "Dubai", "Sharjah", "Ajman",
+                                             "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"],
+                                            index=0 if not user.get('location') else
+                                            ["Abu Dhabi", "Dubai", "Sharjah", "Ajman",
+                                             "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"].index(
+                                                user.get('location', 'Abu Dhabi')))
+
+                with col_b:
+                    phone = st.text_input("Phone Number", value=user.get('phone', ''), placeholder="+971 50 123 4567")
+                    linkedin_url = st.text_input("LinkedIn Profile", value=user.get('linkedin_url', ''))
+                    website_url = st.text_input("Website/Portfolio", value=user.get('website_url', ''))
+
+                bio = st.text_area("Professional Bio",
+                                   value=user.get('bio', ''),
+                                   placeholder="Tell the community about your expertise, interests, and goals...")
+
+                # Professional details for talents
+                if user['user_type'] == 'talent':
+                    st.markdown("#### Talent-Specific Information")
+
+                    # Get talent info if exists
+                    cursor.execute("SELECT * FROM talents WHERE user_id = ?", (user['id'],))
+                    talent_info = cursor.fetchone()
+
+                    col_c, col_d = st.columns(2)
+                    with col_c:
+                        title = st.text_input("Professional Title",
+                                              value=talent_info['title'] if talent_info else "",
+                                              placeholder="e.g., Senior Data Scientist")
+                        experience = st.selectbox("Years of Experience",
+                                                  ["0-1 years", "2-3 years", "4-5 years", "6-10 years", "10+ years"],
+                                                  index=0 if not talent_info else
+                                                  ["0-1 years", "2-3 years", "4-5 years", "6-10 years",
+                                                   "10+ years"].index(talent_info['experience']))
+
+                    with col_d:
+                        availability = st.selectbox("Availability",
+                                                    ["Full-time", "Part-time", "Contract", "Remote"],
+                                                    index=0 if not talent_info else
+                                                    ["Full-time", "Part-time", "Contract", "Remote"].index(
+                                                        talent_info['availability']))
+                        hourly_rate = st.number_input("Hourly Rate (AED)",
+                                                      min_value=0,
+                                                      value=talent_info['hourly_rate'] if talent_info else 150)
+
+                    skills = st.text_input("Skills",
+                                           value=talent_info['skills'] if talent_info else "",
+                                           placeholder="Python, Machine Learning, Data Analysis, etc.")
+                    certifications = st.text_input("Certifications",
+                                                   value=talent_info['certifications'] if talent_info else "",
+                                                   placeholder="AWS Certified, PMP, etc.")
+
+                if st.form_submit_button("Save Profile Changes", use_container_width=True):
+                    cursor = db.conn.cursor()
+                    cursor.execute("""
+                                   UPDATE users
+                                   SET name         = ?,
+                                       organization = ?,
+                                       bio          = ?,
+                                       location     = ?,
+                                       phone        = ?,
+                                       linkedin_url = ?,
+                                       website_url  = ?
+                                   WHERE id = ?
+                                   """,
+                                   (name, organization, bio, location, phone, linkedin_url, website_url, user['id']))
+
+                    if user['user_type'] == 'talent' and talent_info:
+                        cursor.execute("""
+                                       UPDATE talents
+                                       SET title           = ?,
+                                           experience      = ?,
+                                           availability    = ?,
+                                           hourly_rate     = ?,
+                                           kic_hourly_rate = ?,
+                                           skills          = ?,
+                                           certifications  = ?
+                                       WHERE user_id = ?
+                                       """, (title, experience, availability, hourly_rate, hourly_rate // 20,
+                                             skills, certifications, user['id']))
+
+                    db.conn.commit()
+
+                    st.success("✅ Profile updated successfully!")
+                    st.session_state.user.update({
+                        'name': name,
+                        'organization': organization,
+                        'bio': bio,
+                        'location': location,
+                        'phone': phone,
+                        'linkedin_url': linkedin_url,
+                        'website_url': website_url
+                    })
+                    st.rerun()
+
+    with tab2:
+        st.markdown("### 🤝 Professional Network")
+
+        # Network statistics
+        col1, col2, col3 = st.columns(3)
+
+        cursor = db.conn.cursor()
+
+        with col1:
+            cursor.execute("""
+                           SELECT COUNT(*)
+                           FROM connections
+                           WHERE (requester_id = ? OR addressee_id = ?)
+                             AND status = 'accepted'
+                           """, (user['id'], user['id']))
+            connections_count = cursor.fetchone()[0]
+
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-value">{connections_count}</div>
+                <div style="color: #64748b; font-weight: 600;">Connections</div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+        with col2:
+            cursor.execute("""
+                           SELECT COUNT(*)
+                           FROM connections
+                           WHERE addressee_id = ?
+                             AND status = 'pending'
+                           """, (user['id'],))
+            pending_requests = cursor.fetchone()[0]
+
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-value">{pending_requests}</div>
+                <div style="color: #64748b; font-weight: 600;">Pending Requests</div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+        with col3:
+            network_growth = "+12%"
+
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-value">{network_growth}</div>
+                <div style="color: #64748b; font-weight: 600;">This Month</div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+        # Show connections
+        cursor.execute("""
+                       SELECT u.id, u.name, u.user_type, u.organization, u.is_verified
+                       FROM connections c
+                                JOIN users u
+                                     ON (CASE WHEN c.requester_id = ? THEN c.addressee_id ELSE c.requester_id END =
+                                         u.id)
+                       WHERE (c.requester_id = ? OR c.addressee_id = ?)
+                         AND c.status = 'accepted'
+                       ORDER BY c.accepted_at DESC
+                       """, (user['id'], user['id'], user['id']))
+
+        connections = cursor.fetchall()
+
+        if connections:
+            st.markdown("#### Your Professional Network")
+
+            for connection in connections:
+                st.markdown(f'''
+                <div class="modern-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #0077b5, #00a0dc); 
+                                    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                                    color: white; font-weight: bold;">
+                            {connection['name'][0].upper()}
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">{connection['name']}</div>
+                            <div style="color: #64748b;">{connection['organization']}</div>
+                            <div style="color: #0077b5; font-size: 0.9rem;">{connection['user_type'].title()}</div>
+                        </div>
+                        <div>
+                            {f'<span class="status-badge status-verified">✓</span>' if connection['is_verified'] else ''}
+                        </div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+        # Connection requests
+        if pending_requests > 0:
+            st.markdown("#### Pending Connection Requests")
+
+            cursor.execute("""
+                           SELECT c.id, u.name, u.user_type, u.organization, c.message
+                           FROM connections c
+                                    JOIN users u ON c.requester_id = u.id
+                           WHERE c.addressee_id = ?
+                             AND c.status = 'pending'
+                           """, (user['id'],))
+
+            requests = cursor.fetchall()
+
+            for request in requests:
+                st.markdown(f'''
+                <div class="modern-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600;">{request['name']}</div>
+                            <div style="color: #64748b;">{request['organization']}</div>
+                            <div style="color: #475569; font-size: 0.9rem; margin-top: 0.5rem;">
+                                "{request['message']}"
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="professional-btn" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                                Accept
+                            </button>
+                            <button class="professional-btn" style="background: #64748b; font-size: 0.9rem; padding: 0.5rem 1rem;">
+                                Decline
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Accept", key=f"accept_{request['id']}"):
+                        SocialManager.accept_connection(request['id'], db)
+                        st.success("Connection accepted!")
+                        st.rerun()
+                with col2:
+                    if st.button("Decline", key=f"decline_{request['id']}"):
+                        cursor.execute("UPDATE connections SET status = 'declined' WHERE id = ?", (request['id'],))
+                        db.conn.commit()
+                        st.info("Connection declined.")
+                        st.rerun()
+
+    with tab3:
+        st.markdown("### 💼 Professional Activity")
+
+        # Activity metrics
+        col1, col2, col3 = st.columns(3)
+
+        cursor.execute("SELECT COUNT(*) FROM activities WHERE user_id = ?", (user['id'],))
+        total_activities = cursor.fetchone()[0]
+
+        with col1:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-value">{total_activities}</div>
+                <div style="color: #64748b; font-weight: 600;">Total Activities</div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+        with col2:
+            st.markdown('''
+            <div class="metric-card">
+                <div class="metric-value">3</div>
+                <div style="color: #64748b; font-weight: 600;">This Week</div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+        with col3:
+            st.markdown('''
+            <div class="metric-card">
+                <div class="metric-value">127</div>
+                <div style="color: #64748b; font-weight: 600;">Profile Views</div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+        # Recent activity
+        cursor.execute("""
+                       SELECT *
+                       FROM activities
+                       WHERE user_id = ?
+                       ORDER BY created_at DESC LIMIT 10
+                       """, (user['id'],))
+
+        activities = cursor.fetchall()
+
+        if activities:
+            st.markdown("#### Recent Activity")
+
+            for activity in activities:
+                icon_map = {
+                    "project_completed": "✅",
+                    "skill_certified": "🎓",
+                    "connection_made": "🤝",
+                    "project_started": "🚀",
+                    "lab_booking": "🔬",
+                    "university_project": "🎓"
+                }
+
+                icon = icon_map.get(activity['activity_type'], "📋")
+
+                st.markdown(f'''
+                <div class="activity-item">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-size: 1.5rem;">{icon}</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">{activity['title']}</div>
+                            <div style="color: #64748b; font-size: 0.9rem;">{activity['description']}</div>
+                        </div>
+                        <div style="color: #94a3b8; font-size: 0.8rem;">
+                            {activity['created_at'][:10]}
+                        </div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+        else:
+            st.info("No recent activity. Start connecting and working on projects to build your activity history!")
+
+    with tab4:
+        st.markdown("### 💰 KIC Wallet Management")
+
+        col1, col2 = st.columns([2, 1])
+
+        with col1:
+            # KIC balance overview
+            st.markdown(f'''
+            <div class="profile-card">
+                <h3>Current KIC Balance</h3>
+                <div style="font-size: 3rem; font-weight: bold; margin: 1rem 0;">
+                    {user['kic_balance']} KIC
+                </div>
+                <div style="opacity: 0.8;">Knowledge & Innovation Connected Currency</div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+            # Recent transactions
+            st.markdown("#### Recent KIC Transactions")
+
+            transactions = KICManager.get_kic_transactions(user['id'], db, 10)
+
+            if transactions:
+                for txn in transactions:
+                    color = "#16a34a" if txn['amount'] > 0 else "#dc2626"
+                    sign = "+" if txn['amount'] > 0 else ""
+                    icon = "📈" if txn['amount'] > 0 else "📉"
+
+                    st.markdown(f'''
+                    <div class="modern-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span style="font-size: 1.5rem;">{icon}</span>
+                                <div>
+                                    <div style="font-weight: 600;">{txn['transaction_type'].title()}</div>
+                                    <div style="color: #64748b; font-size: 0.9rem;">{txn['description']}</div>
+                                    <div style="color: #94a3b8; font-size: 0.8rem;">{txn['created_at'][:16]}</div>
+                                </div>
+                            </div>
+                            <div style="color: {color}; font-weight: bold; font-size: 1.2rem;">
+                                {sign}{txn['amount']} KIC
+                            </div>
+                        </div>
+                    </div>
+                    ''', unsafe_allow_html=True)
+            else:
+                st.info("No KIC transactions yet.")
+
+        with col2:
+            # Quick actions
+            st.markdown("#### Quick Actions")
+
+            if st.button("💸 Send KIC", use_container_width=True):
+                st.session_state.current_page = "KIC Hub"
+                st.rerun()
+
+            if st.button("📊 View Analytics", use_container_width=True):
+                st.session_state.current_page = "KIC Hub"
+                st.rerun()
+
+            if st.button("🎁 Earn More KIC", use_container_width=True):
+                st.session_state.current_page = "KIC Hub"
+                st.rerun()
+
+            # KIC earning tips
+            st.markdown('''
+            <div class="modern-card">
+                <h4>💡 Earning Tips</h4>
+                <div style="font-size: 0.9rem; line-height: 1.6;">
+                    • Complete projects successfully<br>
+                    • Maintain high ratings<br>
+                    • Refer new talents<br>
+                    • Use labs regularly<br>
+                    • Stay active in community
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+    with tab5:
+        st.markdown("### ⚙️ Account Settings")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("#### Account Security")
+
             with st.form("change_password"):
                 current_password = st.text_input("Current Password", type="password")
                 new_password = st.text_input("New Password", type="password")
                 confirm_password = st.text_input("Confirm New Password", type="password")
-                
+
                 if st.form_submit_button("Update Password"):
                     if new_password != confirm_password:
                         st.error("Passwords don't match")
+                    elif len(new_password) < 8:
+                        st.error("Password must be at least 8 characters")
                     else:
-                        # Проверяем текущий пароль
+                        # Verify current password
                         cursor = db.conn.cursor()
                         cursor.execute("""
-                            SELECT id FROM users 
-                            WHERE id = ? AND password_hash = ?
-                        """, (user['id'], AuthManager.hash_password(current_password)))
-                        
+                                       SELECT id
+                                       FROM users
+                                       WHERE id = ?
+                                         AND password_hash = ?
+                                       """, (user['id'], AuthManager.hash_password(current_password)))
+
                         if cursor.fetchone():
                             cursor.execute("""
-                                UPDATE users 
-                                SET password_hash = ? 
-                                WHERE id = ?
-                            """, (AuthManager.hash_password(new_password), user['id']))
+                                           UPDATE users
+                                           SET password_hash = ?
+                                           WHERE id = ?
+                                           """, (AuthManager.hash_password(new_password), user['id']))
                             db.conn.commit()
-                            st.success("Password updated!")
+                            st.success("✅ Password updated successfully!")
                         else:
                             st.error("Current password is incorrect")
-        
+
         with col2:
-            st.markdown("#### Email Preferences")
-            
-            email_bookings = st.checkbox("Email me about booking confirmations", value=True)
-            email_projects = st.checkbox("Email me about new projects", value=True)
-            email_newsletter = st.checkbox("Subscribe to newsletter", value=False)
-            
-            if st.button("Save Email Preferences"):
-                st.success("Preferences saved!")
-        
+            st.markdown("#### Notification Preferences")
+
+            notification_settings = {
+                "Email notifications for new projects": True,
+                "Email notifications for messages": True,
+                "Email notifications for bookings": True,
+                "Weekly activity summary": False,
+                "KIC transaction alerts": True,
+                "Connection requests": True
+            }
+
+            for setting, default_value in notification_settings.items():
+                st.checkbox(setting, value=default_value, key=f"notif_{setting}")
+
+            if st.button("Save Notification Settings", use_container_width=True):
+                st.success("✅ Notification preferences saved!")
+
         st.markdown("---")
-        
-        col1, col2, col3 = st.columns([1, 1, 3])
+
+        # Account actions
+        col1, col2, col3 = st.columns(3)
+
         with col1:
-            if st.button("🚪 Logout"):
-                del st.session_state.user
-                st.experimental_rerun()
-        
+            if st.button("📧 Export My Data", use_container_width=True):
+                st.info("Data export will be sent to your email within 24 hours.")
+
         with col2:
-            if st.button("🗑️ Delete Account", type="secondary"):
-                st.warning("This action cannot be undone!")
-        
-        # О платформе
-        st.markdown("---")
-        st.markdown('''
-        <div class="glass-card">
-            <h4>📱 About UAE Innovate Hub</h4>
-            <p style="color: rgba(255,255,255,0.7);">
-                UAE Innovate Hub is a comprehensive platform connecting companies, universities, and talented individuals 
-                to accelerate innovation and research in the UAE.
-            </p>
-            <div style="margin-top: 1rem;">
-                <p><strong>Version:</strong> {0}</p>
-                <p><strong>Developer:</strong> {1}</p>
-                <p><strong>Contact:</strong> <a href="mailto:{2}" style="color: #667eea;">{2}</a></p>
-                <p><strong>LinkedIn:</strong> <a href="{3}" style="color: #667eea;">Alisher Beisembekov</a></p>
-                <p><strong>GitHub:</strong> <a href="{4}" style="color: #667eea;">@alisherbeisembekov</a></p>
-            </div>'''.format(__version__, __author__, __email__, __linkedin__, __github__), unsafe_allow_html=True)
-     
+            if st.button("🚪 Logout", use_container_width=True):
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                st.rerun()
 
-# ==================== ГЛАВНОЕ ПРИЛОЖЕНИЕ ====================
+        with col3:
+            if st.button("🗑️ Delete Account", type="secondary", use_container_width=True):
+                st.warning("⚠️ This action cannot be undone!")
+                if st.checkbox("I understand this will permanently delete my account"):
+                    if st.button("Confirm Deletion", type="secondary"):
+                        st.error("Account deletion requires admin approval. Request submitted.")
+
+
+# ==================== MAIN APPLICATION ====================
 def main():
-    # Загружаем стили
-    load_css()
-    
-    # Инициализация БД
-    db = Database()
-    db.seed_data()
-    
-    # Проверка аутентификации
-    if 'user' not in st.session_state:
-        show_login_page(db)
-        return
-    
-    # Навигация
-    st.markdown('''
-    <div class="nav-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto;">
-            <div style="display: flex; align-items: center; gap: 2rem;">
-                <h2 class="gradient-text" style="margin: 0;"> UAE Innovate Hub</h2>
-                <div style="display: flex; gap: 1rem;">
-    ''', unsafe_allow_html=True)
-    
-    # Меню навигации
-    pages = {
-        "Dashboard": "📊",
-        "Labs": "🏢",
-        "Talents": "👥",
-        "Projects": "📋",
-        "DSO Hub": "🌆",
-        "Profile": "👤"
-    }
-    
-    if 'current_page' not in st.session_state:
-        st.session_state.current_page = "Dashboard"
-    
-    cols = st.columns(len(pages) + 1)
-    
-    for idx, (page, icon) in enumerate(pages.items()):
-        with cols[idx]:
-            if st.button(f"{icon} {page}", key=f"nav_{page}", use_container_width=True):
-                st.session_state.current_page = page
-                st.experimental_rerun()
-    
-    # Уведомления
-    with cols[-1]:
-        unread_count = NotificationManager.get_unread_count(st.session_state.user['id'], db)
-        notif_label = f"🔔 ({unread_count})" if unread_count > 0 else "🔔"
-        if st.button(notif_label, key="notifications"):
-            st.session_state.current_page = "Profile"
-            st.experimental_rerun()
-    
-    st.markdown('''
-                </div>
-            </div>
-            <div style="color: rgba(255,255,255,0.7);">
-                Welcome, {} 👋
-            </div>
-        </div>
-    </div>
-    '''.format(st.session_state.user['name']), unsafe_allow_html=True)
-    
-    # Отображение выбранной страницы
-    if st.session_state.current_page == "Dashboard":
-        show_dashboard(db)
-    elif st.session_state.current_page == "Labs":
-        show_labs_page(db)
-    elif st.session_state.current_page == "Talents":
-        show_talents_page(db)
-    elif st.session_state.current_page == "Projects":
-        show_projects_page(db)
-    elif st.session_state.current_page == "Profile":
-        show_profile_page(db)
-    elif st.session_state.current_page == "DSO Hub":
-        show_dso_hub_page(db)
+    # Load enhanced styles
+    load_ultimate_css()
 
-def show_dso_hub_page(db: Database):
-    """Страница DSO Hub"""
-    
-    st.markdown('<h1 class="gradient-text">Dubai Silicon Oasis Testing Hub</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: rgba(255,255,255,0.7); font-size: 1.2rem;">An open innovation ecosystem where companies can test and validate their technology in real-world environments</p>', unsafe_allow_html=True)
-    
-    # Главные кнопки
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        if st.button("🚀 Book Testing Slot", use_container_width=True):
-            st.session_state.show_booking_form = True
-            st.experimental_rerun()
-    
-    # Ключевые преимущества
-    st.markdown("### 🌟 Key Benefits")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.markdown('''
-        <div class="glass-card" style="text-align: center; min-height: 200px;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🌆</div>
-            <h4>Real Environment</h4>
-            <p style="color: rgba(255,255,255,0.7);">Test in actual urban settings with real infrastructure</p>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown('''
-        <div class="glass-card" style="text-align: center; min-height: 200px;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">👨‍💻</div>
-            <h4>Technical Support</h4>
-            <p style="color: rgba(255,255,255,0.7);">Access to technical expertise and support</p>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown('''
-        <div class="glass-card" style="text-align: center; min-height: 200px;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📱</div>
-            <h4>Digital Infrastructure</h4>
-            <p style="color: rgba(255,255,255,0.7);">High-speed connectivity and data analytics</p>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown('''
-        <div class="glass-card" style="text-align: center; min-height: 200px;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
-            <h4>Fast Permitting</h4>
-            <p style="color: rgba(255,255,255,0.7);">Simplified regulatory approvals for testing</p>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Тестовые зоны
-    st.markdown("### 🏗️ Testing Zones")
-    
-    testing_zones = [
-        {
-            "name": "Drone Testing Field",
-            "description": "30,000 sq.m outdoor facility for UAV testing",
-            "features": ["Wind simulation", "GPS tracking", "Obstacle courses", "Safety nets"],
-            "price": "AED 2,000/day",
-            "icon": "🚁"
-        },
-        {
-            "name": "Autonomous Vehicle Track",
-            "description": "2.5 km test track with urban environment simulation",
-            "features": ["Traffic scenarios", "Weather simulation", "5G connectivity", "Control center"],
-            "price": "AED 5,000/day",
-            "icon": "🚗"
-        },
-        {
-            "name": "Smart City Testbed",
-            "description": "Real urban environment for IoT and smart city solutions",
-            "features": ["Sensor networks", "Data platform", "API access", "Edge computing"],
-            "price": "AED 3,000/day",
-            "icon": "🏙️"
-        }
-    ]
-    
-    for zone in testing_zones:
-        st.markdown(f'''
-        <div class="glass-card">
-            <div style="display: flex; gap: 2rem;">
-                <div style="font-size: 4rem;">{zone["icon"]}</div>
-                <div style="flex: 1;">
-                    <h3>{zone["name"]}</h3>
-                    <p style="color: rgba(255,255,255,0.7);">{zone["description"]}</p>
-                    <div style="margin: 1rem 0;">
-                        {' '.join([f'<span class="skill-tag">{feature}</span>' for feature in zone["features"]])}
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: #22c55e; font-size: 1.2rem; font-weight: bold;">{zone["price"]}</span>
-                        <button class="gradient-button">Book Now</button>
-                    </div>
-                </div>
+    # Initialize database with error handling
+    try:
+        db = Database()
+        db.seed_comprehensive_data()
+    except sqlite3.OperationalError as e:
+        st.error(f"""
+        **Database Schema Error**: {e}
+
+        This usually happens when you have an old database file with a different schema.
+
+        **Solutions:**
+        1. Delete the file `innovate_hub_ultimate.db` from your project folder and restart the app
+        2. Or use the "Reset Database" button on the login page
+        """)
+        st.stop()
+    except Exception as e:
+        st.error(f"Unexpected error initializing database: {e}")
+        st.stop()
+
+    # Check authentication
+    if 'user' not in st.session_state:
+        show_ultimate_login_page(db)
+        return
+
+    # Navigation header
+    st.markdown(f'''
+    <div class="nav-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto; padding: 0 1rem;">
+            <div style="display: flex; align-items: center; gap: 2rem;">
+                <h2 class="gradient-text" style="margin: 0; cursor: pointer;" onclick="window.location.reload()">
+                    🔬 UAE Innovate Hub
+                </h2>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span class="kic-balance">💰 {st.session_state.user['kic_balance']} KIC</span>
+                <span style="color: #64748b;">
+                    {st.session_state.user['name']} • {st.session_state.user['user_type'].title()}
+                </span>
             </div>
         </div>
-        ''', unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Success Stories
-    st.markdown("### 🏆 Success Stories")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown('''
-        <div class="glass-card">
-            <h4>🚁 M2M Factory - Drone Delivery</h4>
-            <p style="color: rgba(255,255,255,0.7);">Tested autonomous drone delivery system, achieving 40% improved efficiency and regulatory approval for commercial operations.</p>
-            <div style="margin-top: 1rem;">
-                <span class="status-badge status-active">Commercial Deployment</span>
-                <span class="status-badge status-completed">40% Efficiency Gain</span>
-            </div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown('''
-        <div class="glass-card">
-            <h4>☀️ Enerwhere - Solar Innovation</h4>
-            <p style="color: rgba(255,255,255,0.7);">Developed and tested new solar panel configurations, resulting in patent-pending design with 23% efficiency improvement.</p>
-            <div style="margin-top: 1rem;">
-                <span class="status-badge status-active">Patent Filed</span>
-                <span class="status-badge status-completed">23% Better Performance</span>
-            </div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    # Статистика
-    st.markdown("---")
-    st.markdown("### 📊 DSO Testing Hub Statistics")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.markdown('''
-        <div class="metric-card">
-            <div class="metric-value">150+</div>
-            <div class="metric-label">Companies Tested</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown('''
-        <div class="metric-card">
-            <div class="metric-value">50+</div>
-            <div class="metric-label">Patents Filed</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown('''
-        <div class="metric-card">
-            <div class="metric-value">85%</div>
-            <div class="metric-label">Success Rate</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown('''
-        <div class="metric-card">
-            <div class="metric-value">24/7</div>
-            <div class="metric-label">Support Available</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    # CTA Section
-    st.markdown('''
-    <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%); 
-                border-radius: 16px; padding: 3rem; text-align: center; margin: 2rem 0;">
-        <h2 class="gradient-text">Ready to Test Your Innovation?</h2>
-        <p style="color: rgba(255,255,255,0.7); font-size: 1.1rem; margin: 1rem 0;">
-            Join the growing list of companies who have accelerated their product development at Dubai Silicon Oasis
-        </p>
     </div>
     ''', unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        if st.button("📞 Contact Us", use_container_width=True):
-            st.info("Contact: innovation@dso.ae | +971 4 501 5000")
+
+    # Enhanced navigation menu
+    pages = {
+        "Home": ("🏠", "Dashboard"),
+        "Talents": ("👥", "Talent Network"),
+        "Companies": ("🏢", "Companies"),
+        "Projects": ("📋", "Projects"),
+        "My Projects": ("📊", "My Projects"),
+        "Labs": ("🔬", "Research Labs"),
+        "Lab Access": ("🔐", "Lab Access"),
+        "Universities": ("🎓", "Universities"),
+        "KIC Hub": ("💰", "KIC Hub"),
+        "Messages": ("💬", "Messages"),
+        "Profile": ("👤", "Profile")
+    }
+
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "Home"
+
+    # Create navigation buttons
+    cols = st.columns(len(pages))
+
+    for idx, (page, (icon, label)) in enumerate(pages.items()):
+        with cols[idx]:
+            # Check for notifications
+            has_notification = False
+            if page == "Messages":
+                cursor = db.conn.cursor()
+                cursor.execute("""
+                               SELECT COUNT(*)
+                               FROM messages
+                               WHERE receiver_id = ?
+                                 AND is_read = FALSE
+                               """, (st.session_state.user['id'],))
+                unread_messages = cursor.fetchone()[0]
+                has_notification = unread_messages > 0
+
+            button_type = "primary" if st.session_state.current_page == page else "secondary"
+
+            if st.button(f"{icon} {page}", key=f"nav_{page}", use_container_width=True, type=button_type):
+                st.session_state.current_page = page
+                # Clear any temporary session state
+                temp_keys = ['selected_talent_id', 'connect_talent_id', 'message_talent_id',
+                             'hire_talent_id', 'apply_project_id', 'selected_project_id',
+                             'book_lab_kic_id', 'book_lab_aed_id', 'selected_lab_id']
+                for key in temp_keys:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.rerun()
+
+    st.markdown("---")
+
+    # Display selected page
+    try:
+        if st.session_state.current_page == "Home":
+            show_ultimate_dashboard(db)
+        elif st.session_state.current_page == "Talents":
+            show_talents_page(db)
+        elif st.session_state.current_page == "Companies":
+            show_companies_page(db)
+        elif st.session_state.current_page == "Projects":
+            show_projects_page(db)
+        elif st.session_state.current_page == "My Projects":
+            show_my_projects_page(db)
+        elif st.session_state.current_page == "Labs":
+            show_labs_page(db)
+        elif st.session_state.current_page == "Lab Access":
+            show_lab_access_page(db)
+        elif st.session_state.current_page == "Universities":
+            show_universities_page(db)
+        elif st.session_state.current_page == "KIC Hub":
+            show_kic_hub_page(db)
+        elif st.session_state.current_page == "Messages":
+            show_messages_page(db)
+        elif st.session_state.current_page == "Profile":
+            show_profile_page(db)
+        else:
+            show_ultimate_dashboard(db)
+    except Exception as e:
+        st.error(f"Error loading page: {e}")
+        if st.button("Return to Dashboard"):
+            st.session_state.current_page = "Home"
+            st.rerun()
+
+    # Footer
+    st.markdown("---")
+    st.markdown('''
+    <div style="text-align: center; color: #64748b; padding: 2rem 0;">
+        <p>🔬 KIC Innovate Hub - Knowledge & Innovation Connected</p>
+        <p style="font-size: 0.9rem;">Empowering innovation across the United Arab Emirates</p>
+        <p style="font-size: 0.9rem;">Authors: Alisher Beisembekov & Ghanim Al-Falasi</p>
+        <div style="margin-top: 1rem;">
+            <a href="#" style="color: #0077b5; margin: 0 1rem;">About</a>
+            <a href="#" style="color: #0077b5; margin: 0 1rem;">Privacy</a>
+            <a href="#" style="color: #0077b5; margin: 0 1rem;">Terms</a>
+            <a href="#" style="color: #0077b5; margin: 0 1rem;">Support</a>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
